@@ -1,0 +1,493 @@
+{% extends 'base.html' %}
+
+{% block title %}System Report - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-chart-pie"></i> Center Reports &amp; Flags{% endblock %}
+{% block mobile_title %}Reports &amp; Flags{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-box {
+  background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 20px 24px;
+  display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+.stat-icon {
+  width: 48px; height: 48px; border-radius: 12px; background: rgba(28,79,64,0.08);
+  color: var(--primary); font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.stat-icon.alert { background: rgba(183,64,44,0.1); color: var(--alert); }
+.stat-icon.ok { background: var(--ok-bg); color: var(--ok-text); }
+.stat-num { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--primary); line-height: 1; }
+.stat-label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; letter-spacing: 0.5px; }
+
+.card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.section-label { font-size: 13px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.filter-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pill-btn {
+  background: #fff; border: 1.5px solid var(--line); border-radius: 20px; padding: 6px 16px;
+  font-size: 12px; font-weight: 700; color: var(--ink-soft); cursor: pointer; transition: all 0.2s;
+}
+.pill-btn.active, .pill-btn:hover {
+  border-color: var(--primary); background: var(--primary); color: #fff;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 14px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); border-bottom: 2px solid var(--line); }
+td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--line); color: var(--ink); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(28,79,64,0.02); }
+
+.tag { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.tag-flag { background: var(--alert); color: #fff; }
+.tag-ok { background: var(--ok-bg); color: var(--ok-text); }
+
+@media (max-width: 640px) {
+  .table-responsive { display: none; }
+  .cards-responsive { display: flex; flex-direction: column; gap: 10px; }
+}
+@media (min-width: 641px) {
+  .cards-responsive { display: none; }
+}
+
+/* ── MODAL STYLES ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(17, 30, 24, 0.65);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  padding: 16px; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-backdrop.open { opacity: 1; pointer-events: auto; }
+.modal-dialog { width: 100%; max-width: 480px; transform: scale(0.94) translateY(12px); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+.modal-backdrop.open .modal-dialog { transform: scale(1) translateY(0); }
+.modal-card {
+  background: #ffffff; border-radius: 16px; border: 1px solid rgba(28, 79, 64, 0.12);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2); overflow: hidden; display: flex; flex-direction: column;
+}
+.modal-header { padding: 20px 22px 16px; display: flex; align-items: flex-start; gap: 14px; border-bottom: 1px solid var(--line); }
+.modal-icon-badge {
+  width: 44px; height: 44px; border-radius: 12px; background: rgba(28, 79, 64, 0.1);
+  color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.modal-title { font-family: var(--font-display); font-size: 19px; font-weight: 700; color: var(--primary); margin: 0 0 4px 0; }
+.modal-subtitle { font-size: 12.5px; color: var(--ink-soft); margin: 0; }
+.modal-close-btn {
+  background: transparent; border: none; width: 32px; height: 32px; border-radius: 8px;
+  color: var(--ink-soft); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; margin-left: auto;
+}
+.modal-close-btn:hover { background: rgba(0, 0, 0, 0.05); color: var(--ink); }
+.modal-body { padding: 18px 22px; }
+.flag-detail-card {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--alert);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;
+}
+.flag-detail-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+.flag-detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.5px; }
+.flag-detail-val { font-weight: 600; color: var(--ink); }
+.modal-notice {
+  display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--ink-soft);
+  line-height: 1.45; background: rgba(28, 79, 64, 0.05); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(28, 79, 64, 0.1);
+}
+.modal-error-box {
+  margin-top: 12px; padding: 10px 14px; background: rgba(183, 64, 44, 0.08);
+  border: 1px solid rgba(183, 64, 44, 0.25); border-left: 4px solid var(--alert);
+  border-radius: 8px; color: var(--alert); font-size: 12.5px; display: flex; align-items: center; gap: 8px;
+}
+.modal-footer { padding: 14px 22px 18px; background: #fdfdfd; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer .btn { min-height: 40px; padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 9px; cursor: pointer; }
+.btn-resolve-confirm { background: var(--primary); color: #fff; border: none; }
+.btn-resolve-confirm:hover:not(:disabled) { background: #143b30; }
+
+@media (max-width: 480px) {
+  .modal-dialog { max-width: 100%; margin: 0; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer .btn { width: 100%; min-height: 44px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stat-row">
+  <div class="stat-box">
+    <div class="stat-icon"><i class="fa-solid fa-children"></i></div>
+    <div>
+      <div class="stat-num">{{ total_children|default:0 }}</div>
+      <div class="stat-label">Total Children</div>
+    </div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-icon ok"><i class="fa-solid fa-clipboard-check"></i></div>
+    <div>
+      <div class="stat-num">{{ total_attendances|default:0 }}</div>
+      <div class="stat-label">Attendance Records</div>
+    </div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-icon alert"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div>
+      <div class="stat-num" style="color:var(--alert);">{{ unresolved_flags|default:0 }}</div>
+      <div class="stat-label">Active Flags</div>
+    </div>
+  </div>
+</div>
+
+<!-- MONTHLY ATTENDANCE EXPORT SECTION -->
+<div class="card" style="margin-bottom:24px; border-left:4px solid var(--accent);">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div>
+      <div style="font-family:var(--font-display); font-size:18px; font-weight:700; color:var(--primary);">
+        <i class="fa-solid fa-file-export" style="color:var(--accent); margin-right:6px;"></i> Export Monthly Attendance Reports
+      </div>
+      <div style="font-size:13px; color:var(--ink-soft); margin-top:2px;">
+        Generate official Barangay ECCD attendance registers with daily marks, totals, and signature lines.
+      </div>
+    </div>
+
+    <form method="GET" action="/report/attendance/preview/" id="exportReportForm" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0;">
+      <select name="month" id="reportMonth" class="select" style="min-height:42px; padding:8px 14px; width:auto;">
+        {% for m in months_list %}
+          <option value="{{ m.num }}" {% if m.num == selected_month %}selected{% endif %}>{{ m.name }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="year" id="reportYear" class="select" style="min-height:42px; padding:8px 14px; width:auto;">
+        {% for y in years_list %}
+          <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-outline" style="min-height:42px; padding:8px 14px;">
+        <i class="fa-solid fa-eye"></i> Preview
+      </button>
+
+      <button type="button" class="btn btn-outline" style="min-height:42px; padding:8px 14px;" onclick="downloadExport('pdf')">
+        <i class="fa-solid fa-file-pdf" style="color:var(--alert);"></i> PDF
+      </button>
+
+      <button type="button" class="btn btn-primary" style="min-height:42px; padding:8px 16px;" onclick="downloadExport('excel')">
+        <i class="fa-solid fa-file-excel"></i> Excel (.xlsx)
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+    <div>
+      <span class="section-label">Flags &amp; Case History</span>
+      <div style="font-size:13px; color:var(--ink-soft); margin-top:2px;">Track behavioral, health, and absence alerts across all children.</div>
+    </div>
+
+    <div class="filter-pills" style="margin-bottom:0;">
+      <button type="button" class="pill-btn active" onclick="filterFlags('all', this)">All ({{ flags|length }})</button>
+      <button type="button" class="pill-btn" onclick="filterFlags('active', this)">Active ({{ unresolved_flags }})</button>
+      <button type="button" class="pill-btn" onclick="filterFlags('resolved', this)">Resolved</button>
+    </div>
+  </div>
+
+  <!-- DESKTOP TABLE -->
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Child Name</th>
+          <th>Flag Type</th>
+          <th>Notes</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flag in flags %}
+          <tr class="flag-item" data-status="{% if flag.is_resolved %}resolved{% else %}active{% endif %}">
+            <td style="white-space:nowrap; font-size:13px; color:var(--ink-soft);">
+              {{ flag.created_at|date:"M d, Y" }}
+            </td>
+            <td style="font-weight:700;">
+              <a href="/child/{{ flag.child.id }}/" style="color:var(--primary); text-decoration:none;">
+                {{ flag.child.first_name }} {{ flag.child.last_name }}
+              </a>
+            </td>
+            <td>
+              <span style="font-weight:600;">{{ flag.flag_type }}</span>
+            </td>
+            <td style="font-size:13px; color:var(--ink-soft); max-width:240px;">
+              {{ flag.note|default:"—"|truncatechars:45 }}
+            </td>
+            <td>
+              {% if flag.is_resolved %}
+                <span class="tag tag-ok"><i class="fa-solid fa-check"></i> Resolved</span>
+              {% else %}
+                <span class="tag tag-flag"><i class="fa-solid fa-triangle-exclamation"></i> Active</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not flag.is_resolved %}
+                <button type="button"
+                        class="btn btn-outline btn-resolve-trigger"
+                        data-flag-id="{{ flag.id }}"
+                        data-child-name="{{ flag.child.first_name }} {{ flag.child.last_name }}"
+                        data-flag-type="{{ flag.flag_type }}"
+                        data-flag-date="{{ flag.created_at|date:'M d, Y' }}"
+                        data-flag-note="{{ flag.note|default:'' }}"
+                        data-resolve-url="{% url 'resolve_flag' flag.id %}"
+                        style="min-height:30px; padding:4px 10px; font-size:11px;">
+                  Resolve
+                </button>
+              {% else %}
+                <span style="font-size:12px; color:var(--ink-soft);"><i class="fa-solid fa-check-circle" style="color:var(--ok-text);"></i> Done</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="text-align:center; padding:36px; color:var(--ink-soft);">
+              <i class="fa-regular fa-flag" style="font-size:28px; opacity:0.4; margin-bottom:8px; display:block;"></i>
+              No flags recorded in the system.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MOBILE CARD VIEW -->
+  <div class="cards-responsive">
+    {% for flag in flags %}
+      <div class="flag-item" data-status="{% if flag.is_resolved %}resolved{% else %}active{% endif %}" style="padding:14px; border:1px solid var(--line); border-left:4px solid {% if flag.is_resolved %}var(--ok-line){% else %}var(--alert){% endif %}; border-radius:10px; background:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:6px;">
+          <a href="/child/{{ flag.child.id }}/" style="font-weight:700; color:var(--primary); font-size:15px; text-decoration:none;">
+            {{ flag.child.first_name }} {{ flag.child.last_name }}
+          </a>
+          <span class="tag {% if flag.is_resolved %}tag-ok{% else %}tag-flag{% endif %}">
+            {% if flag.is_resolved %}Resolved{% else %}Active{% endif %}
+          </span>
+        </div>
+        <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:4px;">
+          {{ flag.flag_type }}
+        </div>
+        {% if flag.note %}
+          <div style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">
+            {{ flag.note }}
+          </div>
+        {% endif %}
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ink-soft); border-top:1px solid rgba(0,0,0,0.05); padding-top:8px;">
+          <span>{{ flag.created_at|date:"M d, Y" }}</span>
+          {% if not flag.is_resolved %}
+            <button type="button"
+                    class="btn btn-outline btn-resolve-trigger"
+                    data-flag-id="{{ flag.id }}"
+                    data-child-name="{{ flag.child.first_name }} {{ flag.child.last_name }}"
+                    data-flag-type="{{ flag.flag_type }}"
+                    data-flag-date="{{ flag.created_at|date:'M d, Y' }}"
+                    data-flag-note="{{ flag.note|default:'' }}"
+                    data-resolve-url="{% url 'resolve_flag' flag.id %}"
+                    style="min-height:28px; padding:4px 12px; font-size:11px;">
+              <i class="fa-solid fa-check"></i> Mark Resolved
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div style="text-align:center; padding:32px; color:var(--ink-soft);">
+        No flags recorded in the system.
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<form style="display:none;">{% csrf_token %}</form>
+
+<!-- ── IN-APP CONFIRMATION MODAL ── -->
+<div id="reportResolveModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="repModalTitle" aria-describedby="repModalDesc" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-icon-badge">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <h3 id="repModalTitle" class="modal-title">Mark Flag as Resolved?</h3>
+          <p id="repModalDesc" class="modal-subtitle">Confirm resolution of this active flag.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="repModalCloseBtn" aria-label="Close dialog">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="flag-detail-card">
+          <div class="flag-detail-item">
+            <span class="flag-detail-label">Child</span>
+            <span class="flag-detail-val" id="repModalChildName"></span>
+          </div>
+          <div class="flag-detail-item">
+            <span class="flag-detail-label">Flag Type</span>
+            <span class="flag-detail-val" style="color:var(--alert); font-weight:700;" id="repModalFlagType"></span>
+          </div>
+          <div class="flag-detail-item">
+            <span class="flag-detail-label">Date Flagged</span>
+            <span class="flag-detail-val" id="repModalFlagDate"></span>
+          </div>
+          <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
+            <span class="flag-detail-label">Teacher Note</span>
+            <p style="margin:4px 0 0 0; font-size:12.5px; color:var(--ink); line-height:1.45; font-style:italic;" id="repModalFlagNote"></p>
+          </div>
+        </div>
+
+        <div class="modal-notice">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Marking this flag as resolved indicates that the concern has been addressed and will clear this active alert.</span>
+        </div>
+
+        <div id="repModalErrorAlert" class="modal-error-box" style="display:none;" role="alert">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="repModalErrorMsg">Failed to resolve flag. Please try again.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="repModalCancelBtn">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-resolve-confirm" id="repModalConfirmBtn">
+          <span id="repBtnNormalText"><i class="fa-solid fa-check"></i> Mark as Resolved</span>
+          <span id="repBtnLoadingText" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i> Resolving...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function downloadExport(format) {
+  const m = document.getElementById('reportMonth').value;
+  const y = document.getElementById('reportYear').value;
+  if (format === 'excel') {
+    window.location.href = `/report/attendance/excel/?month=${m}&year=${y}`;
+  } else if (format === 'pdf') {
+    window.location.href = `/report/attendance/pdf/?month=${m}&year=${y}`;
+  }
+}
+
+function filterFlags(type, btn) {
+  document.querySelectorAll('.filter-pills .pill-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.flag-item').forEach(el => {
+    const status = el.dataset.status;
+    if (type === 'all' || status === type) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+(function() {
+  const modal = document.getElementById('reportResolveModal');
+  const closeBtn = document.getElementById('repModalCloseBtn');
+  const cancelBtn = document.getElementById('repModalCancelBtn');
+  const confirmBtn = document.getElementById('repModalConfirmBtn');
+  const btnNormalText = document.getElementById('repBtnNormalText');
+  const btnLoadingText = document.getElementById('repBtnLoadingText');
+  const childNameEl = document.getElementById('repModalChildName');
+  const flagTypeEl = document.getElementById('repModalFlagType');
+  const flagDateEl = document.getElementById('repModalFlagDate');
+  const flagNoteEl = document.getElementById('repModalFlagNote');
+  const errorAlert = document.getElementById('repModalErrorAlert');
+
+  let activeTrigger = null;
+  let pendingUrl = null;
+
+  function getCsrfToken() {
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (input) return input.value;
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+  }
+
+  function openModal(btn) {
+    activeTrigger = btn;
+    pendingUrl = btn.dataset.resolveUrl;
+    childNameEl.textContent = btn.dataset.childName || 'Child';
+    flagTypeEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + (btn.dataset.flagType || 'Flag');
+    flagDateEl.textContent = btn.dataset.flagDate || '';
+    flagNoteEl.textContent = btn.dataset.flagNote || 'No notes provided.';
+    errorAlert.style.display = 'none';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => cancelBtn.focus(), 50);
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+    confirmBtn.disabled = false;
+    cancelBtn.disabled = false;
+    btnNormalText.style.display = 'inline-flex';
+    btnLoadingText.style.display = 'none';
+    if (activeTrigger) activeTrigger.focus();
+    activeTrigger = null;
+    pendingUrl = null;
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', e => {
+    if (!modal.classList.contains('open')) return;
+    if (e.key === 'Escape' || e.key === 'Esc') { e.preventDefault(); closeModal(); }
+    if (e.key === 'Tab') {
+      const focusables = [closeBtn, cancelBtn, confirmBtn];
+      if (e.shiftKey && document.activeElement === focusables[0]) {
+        e.preventDefault(); focusables[focusables.length - 1].focus();
+      } else if (!e.shiftKey && document.activeElement === focusables[focusables.length - 1]) {
+        e.preventDefault(); focusables[0].focus();
+      }
+    }
+  });
+
+  document.querySelectorAll('.btn-resolve-trigger').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openModal(this);
+    });
+  });
+
+  confirmBtn.addEventListener('click', function() {
+    if (!pendingUrl) return;
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    btnNormalText.style.display = 'none';
+    btnLoadingText.style.display = 'inline-flex';
+
+    fetch(pendingUrl, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': getCsrfToken(),
+        'Accept': 'application/json'
+      }
+    })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      window.location.reload();
+    })
+    .catch(err => {
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+      btnNormalText.style.display = 'inline-flex';
+      btnLoadingText.style.display = 'none';
+      errorAlert.style.display = 'flex';
+    });
+  });
+})();
+</script>
+{% endblock %}
