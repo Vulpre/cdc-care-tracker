@@ -1,5 +1,4 @@
 from django.urls import path, reverse_lazy
-from django.views.generic import RedirectView
 from django.contrib.auth import views as auth_views
 from MyNewApp import views
 
@@ -25,8 +24,6 @@ urlpatterns = [
          name='password_reset_complete'),
 
     # App
-    path('about-me/', views.about_me, name='about_me'),
-    path('about_me', RedirectView.as_view(url='/about-me/')),
     path('select-cdc/', views.select_cdc, name='select_cdc'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('attendance/', views.attendance, name='attendance'),

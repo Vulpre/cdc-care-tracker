@@ -54,6 +54,26 @@
         {{ form.gender.errors }}
       </div>
       
+      <div class="field-group">
+        <label class="field-label">Barangay</label>
+        <input type="text" name="barangay" list="barangayOptions" class="input" value="{{ form.barangay.value|default:'' }}" placeholder="e.g. Barangay Tetuan">
+        <datalist id="barangayOptions">
+          <option value="Barangay Tetuan">
+          <option value="Barangay Tumaga">
+          <option value="Barangay Sta. Maria">
+          <option value="Barangay Guiwan">
+          <option value="Barangay Putik">
+          <option value="Barangay Pasonanca">
+          <option value="Barangay Baliwasan">
+          <option value="Barangay San Jose Gusu">
+          <option value="Barangay Canelar">
+          <option value="Barangay Tugbungan">
+          <option value="Barangay Talon-Talon">
+          <option value="Barangay Camino Nuevo">
+        </datalist>
+        {{ form.barangay.errors }}
+      </div>
+
       <div class="field-group" style="margin-bottom:24px;">
         <label class="field-label">Address *</label>
         <input type="text" name="address" class="input" value="{{ form.address.value|default:'' }}" required autocomplete="street-address">

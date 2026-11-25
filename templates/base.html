@@ -227,7 +227,6 @@ input, textarea, select{ font-family:inherit; }
       <a href="{% url 'search' %}" class="nav-link {% if '/search' in request.path %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i> Search Records</a>
       <a href="{% url 'add_flag' %}" class="nav-link {% if '/flag' in request.path %}active{% endif %}"><i class="fa-solid fa-flag"></i> Add a Flag</a>
       <a href="{% url 'report' %}" class="nav-link {% if '/report' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports &amp; Analytics</a>
-      <a href="{% url 'about_me' %}" class="nav-link {% if '/about-me/' in request.path or '/profile' in request.path %}active{% endif %}"><i class="fa-solid fa-id-badge"></i> About Developer</a>
     </nav>
     <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.12); margin-top:auto;">
       {% if request.user.is_authenticated %}
@@ -296,7 +295,6 @@ input, textarea, select{ font-family:inherit; }
       <a href="{% url 'search' %}" class="tab-btn {% if '/search' in request.path %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
       <a href="{% url 'add_flag' %}" class="tab-btn {% if '/flag' in request.path %}active{% endif %}"><i class="fa-solid fa-flag"></i> Flags</a>
       <a href="{% url 'report' %}" class="tab-btn {% if '/report' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports</a>
-      <a href="{% url 'about_me' %}" class="tab-btn {% if '/about-me/' in request.path %}active{% endif %}"><i class="fa-solid fa-id-badge"></i> About</a>
     </nav>
 
   </main>

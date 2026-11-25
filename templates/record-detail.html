@@ -327,7 +327,11 @@
           <span class="detail-label">Gender</span>
           <span class="detail-value"><i class="fa-solid fa-venus-mars" style="color:var(--primary); margin-right:4px;"></i> {{ child.gender }}</span>
         </div>
-        <div class="detail-item" style="grid-column:1/-1;">
+        <div class="detail-item">
+          <span class="detail-label">Barangay</span>
+          <span class="detail-value"><i class="fa-solid fa-map-pin" style="color:var(--primary); margin-right:4px;"></i> {{ child.barangay|default:"—" }}</span>
+        </div>
+        <div class="detail-item">
           <span class="detail-label">Residential Address</span>
           <span class="detail-value"><i class="fa-solid fa-location-dot" style="color:var(--alert); margin-right:4px;"></i> {{ child.address }}</span>
         </div>

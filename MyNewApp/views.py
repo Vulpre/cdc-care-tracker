@@ -107,15 +107,6 @@ def password_reset_request(request):
 # ── ALL VIEWS BELOW REQUIRE LOGIN ─────────────────────────────
 
 @login_required
-def about_me(request):
-    profile_data = AboutMe.objects.first()
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
-    return render(request, 'about-me.html', {
-        'profile': profile_data,
-        'unresolved_flags': unresolved_flags,
-    })
-
-@login_required
 def select_cdc(request):
     return render(request, 'select-cdc.html')
 
@@ -360,7 +351,10 @@ def search(request):
     query = request.GET.get('q', '').strip()
     if query:
         children = Child.objects.filter(
-            Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(address__icontains=query)
+            Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+            | Q(barangay__icontains=query)
+            | Q(address__icontains=query)
         ).prefetch_related('flags')
     else:
         children = Child.objects.all().prefetch_related('flags')

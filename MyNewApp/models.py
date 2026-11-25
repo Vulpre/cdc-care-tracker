@@ -8,6 +8,7 @@ class Child(models.Model):
     last_name     = models.CharField(max_length=100)
     date_of_birth = models.DateField()
     gender        = models.CharField(max_length=10)
+    barangay      = models.CharField(max_length=100, blank=True, default='')
     address       = models.CharField(max_length=255)
 
     def __str__(self):
