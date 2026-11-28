@@ -1,8 +1,6 @@
 import os
 from datetime import date
 from django.utils import timezone
-import joblib
-import pandas as pd
 
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(MODEL_DIR, 'nutrition_model.pkl')
@@ -12,6 +10,7 @@ _cached_model = None
 def get_model():
     global _cached_model
     if _cached_model is None:
+        import joblib  # lazy — only loaded on first prediction
         if not os.path.exists(MODEL_PATH):
             # Train model if not present
             from MyNewApp.ml.train_nutrition_model import train_and_save
@@ -58,6 +57,7 @@ def predict_nutritional_status(date_of_birth, gender_str, weight_kg, height_cm):
     gender_num = 1 if str(gender_str).lower().startswith('f') else 0
 
     try:
+        import pandas as pd  # lazy — only loaded on first prediction
         model = get_model()
         input_df = pd.DataFrame([{
             'age_months': age_months,
