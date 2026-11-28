@@ -82,6 +82,41 @@ class Child(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     @property
+    def age_years(self):
+        """Current age in full completed years."""
+        if not self.date_of_birth:
+            return None
+        today = timezone.localdate()
+        return today.year - self.date_of_birth.year - (
+            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+
+    @property
+    def age_months(self):
+        """Age in total completed months."""
+        if not self.date_of_birth:
+            return None
+        today = timezone.localdate()
+        months = (today.year - self.date_of_birth.year) * 12 + (today.month - self.date_of_birth.month)
+        if today.day < self.date_of_birth.day:
+            months -= 1
+        return max(0, months)
+
+    @property
+    def age_display(self):
+        """Human-friendly age string (e.g. '3 yrs, 4 mos old' or '8 mos old')."""
+        if not self.date_of_birth:
+            return "Unknown"
+        years = self.age_years
+        months = self.age_months
+        rem_months = months % 12
+        if years == 0:
+            return f"{months} mos old"
+        elif rem_months == 0:
+            return f"{years} yrs old"
+        return f"{years} yrs, {rem_months} mos old"
+
+    @property
     def has_active_flags(self):
         """Returns True only if the child has unresolved active flags."""
         return any(not f.is_resolved for f in self.flags.all())

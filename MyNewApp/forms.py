@@ -1,5 +1,6 @@
 import re
 from django import forms
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -143,10 +144,28 @@ class ChildForm(forms.ModelForm):
             'weight_kg', 'height_cm', 'barangay', 'address'
         ]
         widgets = {
-            'date_of_birth': forms.DateInput(attrs={'type': 'date', 'class': 'input'}),
+            'date_of_birth': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'input',
+                'id': 'dob_input',
+            }),
             'weight_kg': forms.NumberInput(attrs={'class': 'input', 'placeholder': 'e.g. 14.5', 'step': '0.1', 'min': '1'}),
             'height_cm': forms.NumberInput(attrs={'class': 'input', 'placeholder': 'e.g. 95.0', 'step': '0.1', 'min': '30'}),
         }
+
+    def clean_date_of_birth(self):
+        dob = self.cleaned_data.get('date_of_birth')
+        if dob:
+            today = timezone.localdate()
+            if dob > today:
+                raise forms.ValidationError("Date of birth cannot be in the future.")
+            # Calculate age in years
+            age_years = today.year - dob.year - (
+                (today.month, today.day) < (dob.month, dob.day)
+            )
+            if age_years > 12:
+                raise forms.ValidationError("Child must be 12 years old or younger for CDC enrollment.")
+        return dob
 
 
 class FlagForm(forms.ModelForm):

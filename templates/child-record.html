@@ -78,6 +78,7 @@
               <div style="font-weight:700; font-size:15px; color:var(--ink);">{{ child.first_name }} {{ child.last_name }}</div>
               <div style="font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;">
                 <span>{{ child.gender }}</span> &bull;
+                <span style="font-weight:600; color:var(--primary);"><i class="fa-solid fa-cake-candles"></i> {{ child.age_display }}</span> &bull;
                 {% if child.nutritional_status %}
                   <span style="font-weight:700; color:{% if 'Underweight' in child.nutritional_status %}var(--alert){% elif child.nutritional_status == 'Overweight' %}#d97706{% else %}var(--primary){% endif %};">
                     <i class="fa-solid fa-heart-pulse"></i> {{ child.nutritional_status }}
@@ -133,8 +134,11 @@
 
         <div class="grid-2col" style="gap:12px; margin-bottom:0;">
           <div class="field-group">
-            <label class="field-label">Date of Birth *</label>
-            <input type="date" name="date_of_birth" id="dob_input" class="input" value="{{ form.date_of_birth.value|default:'' }}" required>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="field-label" style="margin-bottom:0;">Date of Birth *</label>
+              <span id="dob_age_badge" style="display:none; font-size:11px; font-weight:700; color:var(--primary); background:rgba(28,79,64,0.1); padding:2px 8px; border-radius:12px;"></span>
+            </div>
+            <input type="date" name="date_of_birth" id="dob_input" class="input" style="margin-top:6px;" value="{{ form.date_of_birth.value|default:'' }}" required>
             {{ form.date_of_birth.errors }}
           </div>
           <div class="field-group">
@@ -195,11 +199,62 @@
 </div>
 
 <script>
+  function updateAgeBadge() {
+    const dobInput = document.getElementById('dob_input');
+    const badge = document.getElementById('dob_age_badge');
+    if (!dobInput || !badge) return;
+
+    if (!dobInput.value) {
+      badge.style.display = 'none';
+      return;
+    }
+
+    const birthDate = new Date(dobInput.value);
+    const today = new Date();
+
+    if (isNaN(birthDate.getTime()) || birthDate > today) {
+      badge.innerText = 'Future date invalid';
+      badge.style.color = 'var(--alert)';
+      badge.style.background = 'rgba(183,64,44,0.1)';
+      badge.style.display = 'inline-block';
+      return;
+    }
+
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
+    if (today.getDate() < birthDate.getDate()) {
+      months--;
+    }
+    if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+      years--;
+    }
+
+    const remMonths = months % 12;
+    let label = '';
+    if (years === 0) {
+      label = `${months} mos old`;
+    } else if (remMonths === 0) {
+      label = `${years} yrs old`;
+    } else {
+      label = `${years} yrs, ${remMonths} mos old`;
+    }
+
+    badge.innerText = `Age: ${label}`;
+    badge.style.color = 'var(--primary)';
+    badge.style.background = 'rgba(28,79,64,0.1)';
+    badge.style.display = 'inline-block';
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const dobInput = document.getElementById('dob_input');
     if (dobInput) {
       const today = new Date().toISOString().split('T')[0];
       dobInput.setAttribute('max', today);
+      dobInput.addEventListener('input', updateAgeBadge);
+      dobInput.addEventListener('change', updateAgeBadge);
+      if (dobInput.value) {
+        updateAgeBadge();
+      }
     }
   });
 

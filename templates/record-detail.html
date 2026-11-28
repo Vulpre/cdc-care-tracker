@@ -320,8 +320,8 @@
       
       <div class="detail-grid">
         <div class="detail-item">
-          <span class="detail-label">Date of Birth</span>
-          <span class="detail-value"><i class="fa-solid fa-cake-candles" style="color:var(--accent); margin-right:4px;"></i> {{ child.date_of_birth|date:"M d, Y" }}</span>
+          <span class="detail-label">Date of Birth & Age</span>
+          <span class="detail-value"><i class="fa-solid fa-cake-candles" style="color:var(--accent); margin-right:4px;"></i> {{ child.date_of_birth|date:"M d, Y" }} <span style="font-size:12px; font-weight:700; color:var(--primary); background:rgba(28,79,64,0.08); padding:2px 8px; border-radius:12px; margin-left:6px;">{{ child.age_display }}</span></span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Gender</span>
