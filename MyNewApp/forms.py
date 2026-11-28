@@ -123,7 +123,8 @@ class RegistrationForm(forms.Form):
             first_name=cleaned_data['first_name'],
             last_name=cleaned_data['last_name'],
             is_staff=False,
-            is_superuser=False
+            is_superuser=False,
+            is_active=False,  # activated after the emailed code is verified (see otp.py)
         )
         # Create the UserProfile with the chosen field office
         from MyNewApp.models import UserProfile

@@ -233,12 +233,12 @@ class CDCCareTrackerTestCase(TestCase):
         self.client.logout()
         response = self.client.get(reverse('register'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Create Account")
-        self.assertContains(response, "First Name")
-        self.assertContains(response, "Last Name")
+        self.assertContains(response, "Create account")
+        self.assertContains(response, "First name")
+        self.assertContains(response, "Last name")
         self.assertContains(response, "Username")
-        self.assertContains(response, "Email Address")
-        self.assertContains(response, "Log in here")
+        self.assertContains(response, "Email address")
+        self.assertContains(response, "Log in")
 
     def test_register_authenticated_user_redirect(self):
         # Already logged in via setUp
@@ -259,19 +259,20 @@ class CDCCareTrackerTestCase(TestCase):
         }
         response = self.client.post(reverse('register'), post_data)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('dashboard'))
+        self.assertEqual(response.url, reverse('verify_email'))
 
-        # Verify user in database
+        # Verify user in database (inactive until email OTP verified)
         user = User.objects.get(username='teresam')
         self.assertEqual(user.first_name, 'Teresa')
         self.assertEqual(user.last_name, 'Mendoza')
         self.assertEqual(user.email, 'teresa.mendoza@example.com')
         self.assertTrue(user.check_password('StrongPassword2026!'))
+        self.assertFalse(user.is_active)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
 
-        # Verify authenticated session
-        self.assertEqual(int(self.client.session['_auth_user_id']), user.id)
+        # Verify pending verification session
+        self.assertEqual(self.client.session['verify_user_id'], user.id)
 
     def test_register_duplicate_username(self):
         self.client.logout()

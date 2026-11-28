@@ -10,9 +10,10 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q
-from MyNewApp.models import Child, AboutMe, Attendance, Flag
+from MyNewApp.models import Child, AboutMe, Attendance, Flag, EmailVerification
 from MyNewApp.forms import ChildForm, RegistrationForm
 from MyNewApp.ml.predictor import predict_nutritional_status
+from MyNewApp import otp
 from MyNewApp.db_router import set_db_alias
 from MyNewApp.reports import (
     get_monthly_attendance_data,
@@ -66,6 +67,12 @@ def index(request):
                 # Honour ?next= param if present
                 next_url = request.GET.get('next', '/dashboard/')
                 return redirect(next_url)
+            elif _is_unverified(matched_user) and matched_user.check_password(password):
+                # Signed up but never entered the emailed code: send a fresh one.
+                if otp.seconds_until_resend(matched_user) == 0:
+                    otp.send_code(matched_user)
+                request.session[VERIFY_SESSION_KEY] = matched_user.pk
+                return redirect('verify_email')
             else:
                 error = 'Incorrect username or password. Please try again.'
 
@@ -80,15 +87,87 @@ def register_view(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
+            # Account starts inactive until the emailed code is entered.
             user = form.save()
-            # Establish an authenticated session immediately
-            login(request, user)
-            messages.success(request, f"Welcome to CDC Care Tracker, {user.first_name}! Your account has been created successfully.")
-            return redirect('dashboard')
+            otp.send_code(user)
+            request.session[VERIFY_SESSION_KEY] = user.pk
+            return redirect('verify_email')
     else:
         form = RegistrationForm()
 
     return render(request, 'register.html', {'form': form})
+
+
+# ── EMAIL VERIFICATION (OTP) ─────────────────────────────────
+
+VERIFY_SESSION_KEY = 'verify_user_id'
+
+
+def _is_unverified(user):
+    """Inactive *and* has a pending code. Admin-disabled accounts have no code row."""
+    return (user is not None and not user.is_active
+            and EmailVerification.objects.filter(user=user).exists())
+
+
+def _pending_user(request):
+    user = User.objects.filter(pk=request.session.get(VERIFY_SESSION_KEY)).first()
+    return user if _is_unverified(user) else None
+
+
+def verify_email(request):
+    """Enter the 6-digit code sent after sign-up."""
+    user = _pending_user(request)
+    if user is None:
+        request.session.pop(VERIFY_SESSION_KEY, None)
+        return redirect('index')
+
+    error = None
+    if request.method == 'POST':
+        code = ''.join(ch for ch in request.POST.get('code', '') if ch.isdigit())
+        if len(code) != 6:
+            error = 'Enter the 6-digit code from the email.'
+        else:
+            result = otp.check_code(user, code)
+            if result == otp.OK:
+                request.session.pop(VERIFY_SESSION_KEY, None)
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, f"Welcome to CDC Care Tracker, {user.first_name}! Your email is verified and your account is ready.")
+                return redirect('dashboard')
+            error = {
+                otp.WRONG:    "That code isn't right. Check the email and try again.",
+                otp.EXPIRED:  'That code has expired. Send a new code below.',
+                otp.TOO_MANY: 'Too many wrong tries. Send a new code below.',
+                otp.MISSING:  'Send a new code below.',
+            }[result]
+
+    return render(request, 'verify-email.html', {
+        'error': error,
+        'masked_email': otp.mask_email(user.email),
+        'resend_in': otp.seconds_until_resend(user),
+        'ttl_minutes': int(otp.CODE_TTL.total_seconds() // 60),
+    })
+
+
+def resend_verification(request):
+    """POST only: email a new code, at most once per cooldown."""
+    user = _pending_user(request)
+    if user is None:
+        return redirect('index')
+    if request.method == 'POST':
+        if otp.seconds_until_resend(user) == 0:
+            otp.send_code(user)
+            messages.success(request, 'A new code is on its way.')
+    return redirect('verify_email')
+
+
+def cancel_verification(request):
+    """POST only: discard the unverified sign-up so the person can register again."""
+    user = _pending_user(request)
+    if user is not None and request.method == 'POST':
+        user.delete()  # cascades to UserProfile and EmailVerification
+        request.session.pop(VERIFY_SESSION_KEY, None)
+        return redirect('register')
+    return redirect('verify_email' if user else 'index')
 
 
 def logout_view(request):

@@ -8,6 +8,11 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
 
+    # Email verification (OTP)
+    path('verify-email/', views.verify_email, name='verify_email'),
+    path('verify-email/resend/', views.resend_verification, name='resend_verification'),
+    path('verify-email/cancel/', views.cancel_verification, name='cancel_verification'),
+
     # Password reset
     path('password-reset/', views.password_reset_request, name='password_reset'),
     path('password-reset/done/',
