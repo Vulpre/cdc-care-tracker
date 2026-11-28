@@ -1,11 +1,57 @@
 from django.db import models
-from django.utils import timezone
 from django.contrib.auth.models import User
+from django.utils import timezone
+
+
+# ── Field Office ─────────────────────────────────────────────
+FIELD_OFFICE_CHOICES = [
+    ('fo1', 'Field Office 1 — Ayala District'),
+    ('fo2', 'Field Office 2 — Sta. Barbara District'),
+    ('fo3', 'Field Office 3 — Sta. Maria District'),
+    ('fo4', 'Field Office 4 — Tetuan District'),
+    ('fo5', 'Field Office 5 — Culianan District'),
+    ('fo6', 'Field Office 6 — Curuan District'),
+    ('fo7', 'Field Office 7 — Vitali District'),
+]
+
+# Maps field office key → database alias used in settings.py
+FIELD_OFFICE_DB_MAP = {
+    'fo1': 'fo1_db',
+    'fo2': 'fo2_db',
+    'fo3': 'fo3_db',
+    'fo4': 'fo4_db',
+    'fo5': 'fo5_db',
+    'fo6': 'fo6_db',
+    'fo7': 'fo7_db',
+}
+
+
+class UserProfile(models.Model):
+    """Extends the built-in User with a Field Office assignment."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    field_office = models.CharField(
+        max_length=10,
+        choices=FIELD_OFFICE_CHOICES,
+        default='fo1',
+        verbose_name='Field Office',
+    )
+
+    class Meta:
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
+
+    def __str__(self):
+        return f"{self.user.username} — {self.get_field_office_display()}"
+
+    @property
+    def db_alias(self):
+        """Returns the database alias this user's children data lives in."""
+        return FIELD_OFFICE_DB_MAP.get(self.field_office, 'default')
 
 
 # ── Child Model ──────────────────────────────────────────────
 class Child(models.Model):
-    user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='children', null=True, blank=True)
+    user_id       = models.IntegerField(null=True, blank=True, db_index=True)
     first_name    = models.CharField(max_length=100)
     last_name     = models.CharField(max_length=100)
     date_of_birth = models.DateField()

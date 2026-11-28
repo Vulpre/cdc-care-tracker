@@ -13,11 +13,21 @@ from django.db.models import Q
 from MyNewApp.models import Child, AboutMe, Attendance, Flag
 from MyNewApp.forms import ChildForm, RegistrationForm
 from MyNewApp.ml.predictor import predict_nutritional_status
+from MyNewApp.db_router import set_db_alias
 from MyNewApp.reports import (
     get_monthly_attendance_data,
     generate_attendance_excel,
     generate_attendance_pdf
 )
+
+
+def _apply_field_office_db(request):
+    """Set the thread-local DB alias from the logged-in user's field office."""
+    if request.user.is_authenticated:
+        try:
+            set_db_alias(request.user.profile.db_alias)
+        except Exception:
+            set_db_alias('default')
 
 
 # ── LOGIN / LOGOUT / PASSWORD RESET ──────────────────────────
@@ -113,21 +123,61 @@ def select_cdc(request):
 
 @login_required
 def dashboard(request):
-    total_children = Child.objects.filter(user=request.user).count()
-    children = Child.objects.filter(user=request.user)[:5]
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
-    recent_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).select_related('child')[:3]
+    _apply_field_office_db(request)
+    today = timezone.localdate()
+
+    # Summary stats
+    user_children    = Child.objects.filter(user_id=request.user.id)
+    total_children   = user_children.count()
+    present_today    = Attendance.objects.filter(child__user_id=request.user.id, date=today, status='Present').count()
+    absent_today     = Attendance.objects.filter(child__user_id=request.user.id, date=today, status='Absent').count()
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
+
+    # Recent children (last 5 added)
+    children = user_children.order_by('-id')[:5]
+
+    # Recent flags (latest 5 unresolved)
+    recent_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).select_related('child').order_by('-created_at')[:5]
+
+    # Recent attendance activity (last 5 records)
+    recent_attendance = Attendance.objects.filter(child__user_id=request.user.id).select_related('child').order_by('-created_at')[:5]
+
+    # Attendance chart data: last 7 days present/absent counts
+    chart_labels = []
+    chart_present = []
+    chart_absent  = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        chart_labels.append(day.strftime('%b %d'))
+        chart_present.append(Attendance.objects.filter(child__user_id=request.user.id, date=day, status='Present').count())
+        chart_absent.append(Attendance.objects.filter(child__user_id=request.user.id, date=day, status='Absent').count())
+
+    # Field office label
+    field_office_label = ''
+    try:
+        field_office_label = request.user.profile.get_field_office_display()
+    except Exception:
+        pass
     return render(request, 'dashboard.html', {
-        'total_children': total_children,
-        'children': children,
-        'unresolved_flags': unresolved_flags,
-        'recent_flags': recent_flags,
+        'today':             today,
+        'total_children':    total_children,
+        'present_today':     present_today,
+        'absent_today':      absent_today,
+        'unresolved_flags':  unresolved_flags,
+        'children':          children,
+        'recent_flags':      recent_flags,
+        'recent_attendance': recent_attendance,
+        'chart_labels':      chart_labels,
+        'chart_present':     chart_present,
+        'chart_absent':      chart_absent,
+        'field_office_label': field_office_label,
     })
 
 @login_required
 def attendance(request):
-    children = Child.objects.filter(user=request.user).order_by('last_name', 'first_name')
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    _apply_field_office_db(request)
+    children = Child.objects.filter(user_id=request.user.id).order_by('last_name', 'first_name')
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
     today = timezone.localdate()
 
     # Parse and validate target date from POST or GET
@@ -230,13 +280,14 @@ def attendance_saved(request):
 
 @login_required
 def child_record(request):
-    children = Child.objects.filter(user=request.user).order_by('last_name', 'first_name')
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    _apply_field_office_db(request)
+    children = Child.objects.filter(user_id=request.user.id).order_by('last_name', 'first_name')
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
     form = ChildForm(request.POST or None)
 
     if request.method == 'POST' and form.is_valid():
         child = form.save(commit=False)
-        child.user = request.user
+        child.user_id = request.user.id
 
         # Machine Learning: Nutritional Status Prediction based on WHO Standards
         if child.weight_kg and child.height_cm:
@@ -279,12 +330,12 @@ def child_record(request):
 
 @login_required
 def view_child(request, id):
-    child = get_object_or_404(Child, id=id, user=request.user)
+    child = get_object_or_404(Child, id=id, user_id=request.user.id)
     attendances = child.attendances.order_by('-date')[:5]
     flags = child.flags.order_by('-created_at')
     active_flags = child.flags.filter(is_resolved=False).order_by('-created_at')
     resolved_flags = child.flags.filter(is_resolved=True).order_by('-created_at')
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
     return render(request, 'record-detail.html', {
         'child': child,
         'attendances': attendances,
@@ -297,7 +348,7 @@ def view_child(request, id):
 
 @login_required
 def edit_child(request, id):
-    child = get_object_or_404(Child, id=id, user=request.user)
+    child = get_object_or_404(Child, id=id, user_id=request.user.id)
     form = ChildForm(request.POST or None, instance=child)
     if request.method == 'POST' and form.is_valid():
         updated_child = form.save(commit=False)
@@ -322,7 +373,7 @@ def edit_child(request, id):
 
 @login_required
 def delete_child(request, id):
-    child = get_object_or_404(Child, id=id, user=request.user)
+    child = get_object_or_404(Child, id=id, user_id=request.user.id)
     if request.method == 'POST':
         child.delete()
         messages.success(request, 'Record deleted.')
@@ -333,21 +384,21 @@ def delete_child(request, id):
 
 @login_required
 def record_detail(request):
-    first_child = Child.objects.filter(user=request.user).first()
+    first_child = Child.objects.filter(user_id=request.user.id).first()
     if first_child:
         return redirect('view_child', id=first_child.id)
     return redirect('child_record')
 
 @login_required
 def add_flag(request):
-    children = Child.objects.filter(user=request.user)
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    children = Child.objects.filter(user_id=request.user.id)
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
     if request.method == 'POST':
         child_id  = request.POST.get('child')
         flag_type = request.POST.get('flag_type', 'Absence streak')
         note      = request.POST.get('note', '')
         if child_id:
-            child = get_object_or_404(Child, id=child_id, user=request.user)
+            child = get_object_or_404(Child, id=child_id, user_id=request.user.id)
             flag  = Flag.objects.create(child=child, flag_type=flag_type, note=note)
             request.session['last_flag_child'] = f"{child.first_name} {child.last_name}"
             request.session['last_flag_type']  = flag.flag_type
@@ -356,7 +407,7 @@ def add_flag(request):
 
 @login_required
 def resolve_flag(request, id):
-    flag = get_object_or_404(Flag, id=id, child__user=request.user)
+    flag = get_object_or_404(Flag, id=id, child__user_id=request.user.id)
     flag.is_resolved = True
     flag.save()
     messages.success(request, f"Flag '{flag.flag_type}' for {flag.child.first_name} {flag.child.last_name} marked as resolved.")
@@ -364,7 +415,7 @@ def resolve_flag(request, id):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
         child = flag.child
         remaining_child_flags = child.flags.filter(is_resolved=False).count()
-        total_unresolved = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+        total_unresolved = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
         return JsonResponse({
             'status': 'success',
             'message': f"Flag '{flag.flag_type}' has been resolved.",
@@ -389,17 +440,25 @@ def flag_saved(request):
 @login_required
 def profile(request):
     profile_data = AboutMe.objects.first()
-    return render(request, 'profile.html', {'profile': profile_data})
+    field_office_label = ''
+    try:
+        field_office_label = request.user.profile.get_field_office_display()
+    except Exception:
+        pass
+    return render(request, 'profile.html', {
+        'profile': profile_data,
+        'field_office_label': field_office_label,
+    })
 
 @login_required
 def desk_profile(request):
-    profile_data = AboutMe.objects.first()
-    return render(request, 'desk-profile.html', {'profile': profile_data})
+    return redirect('profile')
 
 @login_required
 def search(request):
+    _apply_field_office_db(request)
     query = request.GET.get('q', '').strip()
-    user_children = Child.objects.filter(user=request.user)
+    user_children = Child.objects.filter(user_id=request.user.id)
     if query:
         children = user_children.filter(
             Q(first_name__icontains=query)
@@ -413,11 +472,12 @@ def search(request):
 
 @login_required
 def report(request):
-    user_children = Child.objects.filter(user=request.user)
+    _apply_field_office_db(request)
+    user_children = Child.objects.filter(user_id=request.user.id)
     total_children = user_children.count()
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
-    total_attendances = Attendance.objects.filter(child__user=request.user).count()
-    flags = Flag.objects.filter(child__user=request.user).select_related('child')
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
+    total_attendances = Attendance.objects.filter(child__user_id=request.user.id).count()
+    flags = Flag.objects.filter(child__user_id=request.user.id).select_related('child')
 
     # Reporting options
     today = timezone.localdate()
@@ -516,7 +576,7 @@ def attendance_monthly_preview(request):
 
     data = get_monthly_attendance_data(year, month, user=request.user)
     user_name = request.user.get_full_name() or request.user.username
-    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    unresolved_flags = Flag.objects.filter(child__user_id=request.user.id, is_resolved=False).count()
 
     months_list = [{'num': m, 'name': calendar.month_name[m]} for m in range(1, 13)]
     years_list = list(range(now.year - 2, now.year + 1))

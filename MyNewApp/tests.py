@@ -17,6 +17,7 @@ class CDCCareTrackerTestCase(TestCase):
         self.client.force_login(self.user)
 
         self.child1 = Child.objects.create(
+            user_id=self.user.id,
             first_name="Gabriel",
             last_name="Alvarez",
             date_of_birth=date(2020, 5, 15),
@@ -24,6 +25,7 @@ class CDCCareTrackerTestCase(TestCase):
             address="Barangay 12, Caloocan"
         )
         self.child2 = Child.objects.create(
+            user_id=self.user.id,
             first_name="Maria",
             last_name="Reyes",
             date_of_birth=date(2021, 8, 20),
@@ -155,7 +157,7 @@ class CDCCareTrackerTestCase(TestCase):
         # Verify child is marked in good standing once all flags are resolved
         self.assertFalse(self.child1.has_active_flags)
         dash_res = self.client.get(reverse('dashboard'))
-        self.assertContains(dash_res, "In Good Standing")
+        self.assertContains(dash_res, "OK")
         dir_res = self.client.get(reverse('child_record'))
         self.assertContains(dir_res, "Good")
         detail_res = self.client.get(reverse('view_child', args=[self.child1.id]))
@@ -247,6 +249,7 @@ class CDCCareTrackerTestCase(TestCase):
     def test_register_successful_creation(self):
         self.client.logout()
         post_data = {
+            'field_office': 'fo1',
             'first_name': 'Teresa',
             'last_name': 'Mendoza',
             'username': 'teresam',

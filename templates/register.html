@@ -115,6 +115,24 @@ a:hover{text-decoration:underline;}
   <form method="POST" action="{% url 'register' %}" id="register-form" novalidate>
     {% csrf_token %}
 
+    {# ── Field Office ── #}
+    <label class="field-label" for="id_field_office">Field Office</label>
+    <div class="field-wrap">
+      <select
+        class="input {% if form.field_office.errors %}error{% endif %}"
+        name="field_office"
+        id="id_field_office"
+        required>
+        <option value="" disabled {% if not form.field_office.value %}selected{% endif %}>— Select your Field Office —</option>
+        {% for value, label in form.field_office.field.choices %}
+          <option value="{{ value }}" {% if form.field_office.value == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% if form.field_office.errors %}
+        <div class="field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.field_office.errors.0 }}</div>
+      {% endif %}
+    </div>
+
     <div class="form-grid-2">
       <div>
         <label class="field-label" for="id_first_name">First Name</label>

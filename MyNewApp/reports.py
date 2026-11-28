@@ -29,7 +29,7 @@ def get_monthly_attendance_data(year: int, month: int, user=None):
 
     child_qs = Child.objects.all()
     if user is not None:
-        child_qs = child_qs.filter(user=user)
+        child_qs = child_qs.filter(user_id=user.id)
     children = child_qs.order_by('last_name', 'first_name')
 
     attendances = Attendance.objects.filter(

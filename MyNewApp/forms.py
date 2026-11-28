@@ -3,10 +3,18 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from MyNewApp.models import Child, AboutMe, MyModel, Flag
+from MyNewApp.models import Child, AboutMe, MyModel, Flag, FIELD_OFFICE_CHOICES
 
 
 class RegistrationForm(forms.Form):
+    field_office = forms.ChoiceField(
+        choices=FIELD_OFFICE_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'input',
+        }),
+        label='Field Office',
+    )
     first_name = forms.CharField(
         max_length=50,
         required=True,
@@ -116,6 +124,12 @@ class RegistrationForm(forms.Form):
             last_name=cleaned_data['last_name'],
             is_staff=False,
             is_superuser=False
+        )
+        # Create the UserProfile with the chosen field office
+        from MyNewApp.models import UserProfile
+        UserProfile.objects.create(
+            user=user,
+            field_office=cleaned_data['field_office'],
         )
         return user
 

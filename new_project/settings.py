@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'MyNewApp.db_router.FieldOfficeMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -78,6 +79,7 @@ WSGI_APPLICATION = 'new_project.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
+    # ── Default DB: users, auth, sessions ────────────────────
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME', 'my_django_db'),
@@ -85,8 +87,67 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', '127.0.0.1'),
         'PORT': os.getenv('DB_PORT', '3306'),
-    }
+    },
+    # ── Field Office Databases (one per office) ───────────────
+    'fo1_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO1_DB_NAME', 'cdc_fo1'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
+    'fo2_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO2_DB_NAME', 'cdc_fo2'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
+    'fo3_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO3_DB_NAME', 'cdc_fo3'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
+    'fo4_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO4_DB_NAME', 'cdc_fo4'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
+    'fo5_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO5_DB_NAME', 'cdc_fo5'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
+    'fo6_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO6_DB_NAME', 'cdc_fo6'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
+    'fo7_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('FO7_DB_NAME', 'cdc_fo7'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    },
 }
+
+DATABASE_ROUTERS = ['MyNewApp.db_router.FieldOfficeRouter']
 
 
 # Password validation

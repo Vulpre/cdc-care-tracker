@@ -28,20 +28,31 @@
   --font-mono:'IBM Plex Mono',monospace;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0; height:100vh; overflow:hidden;}
+html,body{margin:0;padding:0; height:100vh; height:100dvh; overflow:hidden;}
 body{
   font-family:var(--font-body);
   color:var(--ink);
   background:var(--app-bg);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
 }
+h1,h2,h3,h4{ text-wrap:balance; }
 a{ all:unset; box-sizing:border-box; cursor:pointer; }
-input, textarea, select{ font-family:inherit; }
+input, textarea, select, button{ font-family:inherit; }
+::selection{ background:rgba(232,163,61,.35); color:var(--ink); }
+
+/* `a{all:unset}` strips the UA focus ring, so restore one for keyboard users everywhere */
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; border-radius:6px; }
+.sidebar :focus-visible{ outline-color:var(--accent); }
 
 /* ── LAYOUT SHELL ── */
 .app-container {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -53,48 +64,71 @@ input, textarea, select{ font-family:inherit; }
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.3s;
 }
 .sidebar-header {
-  padding: 24px;
+  padding: 22px 24px;
   font-family: var(--font-display);
   font-size: 19px;
   font-weight: 700;
   color: var(--accent);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
+.sidebar-logo {
+  width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--primary-deep);
+  display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+}
 .sidebar-nav {
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
+  overflow-y: auto;
 }
 .nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  color: rgba(255,255,255,0.7);
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: rgba(255,255,255,0.72);
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color .15s ease, color .15s ease;
 }
-.nav-link i { font-size: 16px; width: 20px; text-align: center; }
-.nav-link:hover, .nav-link.active {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
+.nav-link i { font-size: 15px; width: 20px; text-align: center; opacity:.85; }
+.nav-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-link.active { background: rgba(255,255,255,0.1); color: #fff; }
+.nav-link.active i { color: var(--accent); opacity:1; }
+.nav-link.active::before {
+  content:""; position:absolute; left:-16px; top:10px; bottom:10px; width:3px;
+  border-radius:0 3px 3px 0; background:var(--accent);
 }
+
+.sidebar-footer { padding:16px 20px; border-top:1px solid rgba(255,255,255,0.12); margin-top:auto; }
+.sidebar-user { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.sidebar-avatar {
+  width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.15);
+  display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0;
+}
+.sidebar-user-name { font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sidebar-user-role { font-size:11px; color:rgba(255,255,255,0.6); }
+.sidebar-logout {
+  display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:600;
+  color:rgba(255,255,255,0.85); padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.18);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.sidebar-logout:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.3); color:#fff; }
 
 /* ── MAIN CONTENT AREA ── */
 .main-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; 
+  min-width: 0;
   min-height: 0; /* fixes flexbox height blow-out */
   background: var(--app-bg);
   position: relative;
@@ -108,7 +142,8 @@ input, textarea, select{ font-family:inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 40px;
+  gap: 16px;
+  padding: 18px 40px;
   background: #fff;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
@@ -121,9 +156,13 @@ input, textarea, select{ font-family:inherit; }
   display: flex;
   align-items: center;
   gap: 12px;
+  letter-spacing: -0.01em;
+  min-width: 0;
 }
+.desktop-topbar-title > i { font-size: 18px; color: var(--accent); }
 .back-btn-desk {
   font-family: var(--font-body); font-size: 14px; color: var(--ink-soft); font-weight: 600; cursor:pointer;
+  transition: color .15s ease;
 }
 .back-btn-desk:hover { color: var(--primary); }
 
@@ -131,14 +170,25 @@ input, textarea, select{ font-family:inherit; }
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 40px;
   min-height: 0; /* ensures scrolling works */
+  scrollbar-gutter: stable;
 }
 .content-inner {
   max-width: 1100px;
   margin: 0 auto;
   width: 100%;
 }
+
+/* ── FLASH MESSAGES ── */
+.flash {
+  display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:12px 16px;
+  border-radius:10px; font-size:13px; font-weight:500;
+  border:1px solid rgba(183,64,44,0.3); border-left:4px solid var(--alert);
+  background:rgba(183,64,44,0.08); color:var(--alert);
+}
+.flash-success { background:var(--ok-bg); border-color:var(--ok-line); border-left-color:var(--ok-text); color:var(--ok-text); }
 
 /* ── MOBILE BOTTOM NAV (Hidden on Desktop) ── */
 .mobile-tabbar { display: none; }
@@ -147,58 +197,104 @@ input, textarea, select{ font-family:inherit; }
 .badge {
   min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--alert); color: #fff;
   font-family: var(--font-mono); font-size: 11px; display: inline-flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
 }
 
-.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:14px; border-radius:10px; padding:14px 20px; text-align:center; border:none; cursor:pointer; min-height:46px; touch-action:manipulation; text-decoration:none; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:14px;
+  border-radius:10px; padding:13px 20px; text-align:center; border:1.5px solid transparent; cursor:pointer;
+  min-height:46px; touch-action:manipulation; text-decoration:none; line-height:1.2; user-select:none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, filter .15s ease, transform .1s ease;
+}
+.btn:active{ transform:translateY(1px); }
+.btn:disabled, .btn[aria-disabled="true"]{ opacity:.55; cursor:not-allowed; transform:none; }
 .btn-primary{ background:var(--accent); color:var(--ink); }
 .btn-primary:hover{ filter:brightness(0.95); }
-.btn-outline{ background:transparent; border:1.5px solid var(--line); color:var(--ink-soft); }
+.btn-outline{ background:#fff; border-color:var(--line); color:var(--ink-soft); }
+.btn-outline:hover{ border-color:var(--primary); color:var(--primary); }
 .btn-danger{ background:var(--alert); color:#fff; }
+.btn-danger:hover{ filter:brightness(0.92); }
 .btn-full{ width:100%; }
 
 .input, .textarea, .select {
-  border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:14px 16px;
-  font-size:14px; color:var(--ink); width:100%; min-height:48px; outline:none; transition:border-color 0.2s; box-sizing:border-box;
+  border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:13px 16px;
+  font-size:14px; color:var(--ink); width:100%; min-height:48px; outline:none; box-sizing:border-box;
+  transition:border-color .15s ease, box-shadow .15s ease;
 }
-.input:focus, .textarea:focus, .select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(28,79,64,.1); }
-.textarea { min-height:100px; resize:vertical; }
+.input::placeholder, .textarea::placeholder { color:#8E958F; }
+.input:hover, .textarea:hover, .select:hover { border-color:#C3BCA9; }
+.input:focus, .textarea:focus, .select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(28,79,64,.12); }
+.textarea { min-height:100px; resize:vertical; line-height:1.5; }
+.select { cursor:pointer; }
 
 .field-group{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 .field-label{ font-size:12px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
 
 /* ── RESPONSIVE GRIDS ── */
-.grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
-.grid-3col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-.grid-4col { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 24px; }
+.grid-3col { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 20px; }
+.grid-4col { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px; }
+
+/* ── TABLET (sidebar still visible, tighter gutters) ── */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .sidebar { width: 220px; }
+  .desktop-topbar { padding: 16px 28px; }
+  .content-scroll { padding: 28px; }
+}
 
 /* ── MOBILE BREAKPOINT (<= 768px) ── */
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .app-container { flex-direction: column; }
-  
+
   .desktop-topbar { display: none; }
-  
+
   .mobile-topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; background: #fff; border-bottom: 1px solid var(--line); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top));
+    background: #fff; border-bottom: 1px solid var(--line); flex-shrink: 0;
   }
-  .mobile-wordmark { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--primary); }
-  
-  .content-scroll { padding: 20px 16px 30px; }
-  
+  .mobile-wordmark {
+    font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--primary);
+    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar-icon {
+    width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; background:rgba(28,79,64,0.06); color:var(--primary); flex-shrink:0;
+  }
+  .topbar-icon.danger { background:rgba(183,64,44,0.08); color:var(--alert); }
+
+  .content-scroll { padding: 20px 16px 28px; scrollbar-gutter: auto; }
+
   .mobile-tabbar {
-    display: flex; justify-content: space-around; padding: 12px 6px 20px;
+    display: flex; justify-content: space-around; gap: 2px;
+    padding: 6px 4px; padding-bottom: max(8px, env(safe-area-inset-bottom));
     background: #fff; border-top: 1px solid var(--line); flex-shrink: 0;
     box-shadow: 0 -4px 15px rgba(0,0,0,0.03);
   }
   .tab-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 10px; color: var(--ink-soft); touch-action: manipulation; font-weight:600;
+    position: relative; flex: 1; min-width: 0; min-height: 52px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-size: 10.5px; color: var(--ink-soft); touch-action: manipulation; font-weight:600;
+    border-radius: 10px; -webkit-tap-highlight-color: transparent;
+    transition: color .15s ease, background-color .15s ease;
   }
-  .tab-btn i { font-size: 18px; margin-bottom:2px; }
+  .tab-btn i { font-size: 18px; }
+  .tab-btn:active { background: rgba(28,79,64,0.06); }
   .tab-btn.active { color: var(--primary); font-weight: 700; }
-  
+  .tab-btn.active::before {
+    content:""; position:absolute; top:-6px; left:30%; right:30%; height:3px;
+    border-radius:0 0 3px 3px; background:var(--accent);
+  }
+
   .grid-2col, .grid-3col, .grid-4col { grid-template-columns: 1fr; gap:16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
 }
 </style>
 
@@ -212,7 +308,7 @@ input, textarea, select{ font-family:inherit; }
   <aside class="sidebar">
     <div class="sidebar-header">
       <div style="display:flex; align-items:center; gap:10px;">
-        <div style="width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--primary-deep); display:flex; align-items:center; justify-content:center; font-size:16px;">
+        <div class="sidebar-logo" aria-hidden="true">
           <i class="fa-solid fa-children"></i>
         </div>
         <div>
@@ -220,29 +316,39 @@ input, textarea, select{ font-family:inherit; }
         </div>
       </div>
     </div>
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="Main">
       <a href="{% url 'dashboard' %}" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}"><i class="fa-solid fa-house"></i> Dashboard</a>
       <a href="{% url 'attendance' %}" class="nav-link {% if request.path == '/attendance/' or request.path == '/attendance-saved/' %}active{% endif %}"><i class="fa-solid fa-clipboard-user"></i> Daily Attendance</a>
       <a href="{% url 'child_record' %}" class="nav-link {% if '/child' in request.path and 'record' in request.path %}active{% endif %}"><i class="fa-solid fa-children"></i> Children Directory</a>
       <a href="{% url 'search' %}" class="nav-link {% if '/search' in request.path %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i> Search Records</a>
       <a href="{% url 'add_flag' %}" class="nav-link {% if '/flag' in request.path %}active{% endif %}"><i class="fa-solid fa-flag"></i> Add a Flag</a>
       <a href="{% url 'report' %}" class="nav-link {% if '/report' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports &amp; Analytics</a>
+
+      {% if request.user.is_staff or request.user.is_superuser %}
+      <div style="margin: 12px 0 6px; padding: 0 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.35);">Admin</div>
+      <a href="/admin/auth/user/" class="nav-link {% if '/admin/auth/user' in request.path %}active{% endif %}"><i class="fa-solid fa-users-gear"></i> Manage Users</a>
+      <a href="/admin/" class="nav-link {% if request.path == '/admin/' %}active{% endif %}"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
+      {% endif %}
+
+      <div style="margin: 12px 0 6px; padding: 0 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.35);">Account</div>
+      <a href="{% url 'profile' %}" class="nav-link {% if '/profile' in request.path %}active{% endif %}"><i class="fa-solid fa-circle-user"></i> My Profile</a>
+      <a href="{% url 'password_reset' %}" class="nav-link {% if '/password-reset' in request.path %}active{% endif %}"><i class="fa-solid fa-key"></i> Change Password</a>
     </nav>
-    <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.12); margin-top:auto;">
+    <div class="sidebar-footer">
       {% if request.user.is_authenticated %}
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-          <div style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar" aria-hidden="true">
             {{ request.user.username|make_list|first|upper }}
           </div>
           <div style="min-width:0; flex:1;">
-            <div style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <div class="sidebar-user-name">
               {{ request.user.get_full_name|default:request.user.username }}
             </div>
-            <div style="font-size:11px; color:rgba(255,255,255,0.6);">Day Care Worker</div>
+            <div class="sidebar-user-role">Day Care Worker</div>
           </div>
         </div>
       {% endif %}
-      <a href="/logout/" style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:rgba(255,255,255,0.85); font-weight:600; text-decoration:none; padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.color='#fff';" onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.85)';">
+      <a href="/logout/" class="sidebar-logout">
         <i class="fa-solid fa-right-from-bracket"></i> Log Out
       </a>
     </div>
@@ -257,8 +363,8 @@ input, textarea, select{ font-family:inherit; }
       <span class="mobile-wordmark">{% block mobile_title %}CDC Care Tracker{% endblock %}</span>
       <div style="display:flex; align-items:center; gap:8px;">
         {% block mobile_topbar_right %}{% endblock %}
-        <a href="{% url 'search' %}" style="width:34px; height:34px; border-radius:8px; background:rgba(28,79,64,0.06); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:14px; text-decoration:none;" title="Search"><i class="fa-solid fa-magnifying-glass"></i></a>
-        <a href="/logout/" style="width:34px; height:34px; border-radius:8px; background:rgba(183,64,44,0.08); color:var(--alert); display:flex; align-items:center; justify-content:center; font-size:14px; text-decoration:none;" title="Log Out" onclick="return confirm('Log out of CDC Care Tracker?');"><i class="fa-solid fa-right-from-bracket"></i></a>
+        <a href="{% url 'search' %}" class="topbar-icon" title="Search" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></a>
+        <a href="/logout/" class="topbar-icon danger" title="Log Out" aria-label="Log out" onclick="return confirm('Log out of CDC Care Tracker?');"><i class="fa-solid fa-right-from-bracket"></i></a>
       </div>
     </header>
 
@@ -277,7 +383,7 @@ input, textarea, select{ font-family:inherit; }
       <div class="content-inner">
         {% if messages %}
           {% for message in messages %}
-            <div style="background:{% if message.tags == 'success' %}#EBF7F0{% else %}rgba(183,64,44,0.08){% endif %}; border:1px solid {% if message.tags == 'success' %}#A3D9BC{% else %}rgba(183,64,44,0.3){% endif %}; border-left:4px solid {% if message.tags == 'success' %}#1A6E3C{% else %}#B7402C{% endif %}; border-radius:10px; padding:12px 16px; font-size:13px; color:{% if message.tags == 'success' %}#1A6E3C{% else %}#B7402C{% endif %}; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+            <div class="flash{% if message.tags == 'success' %} flash-success{% endif %}" role="{% if message.tags == 'success' %}status{% else %}alert{% endif %}">
               <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
               {{ message }}
             </div>
@@ -288,7 +394,7 @@ input, textarea, select{ font-family:inherit; }
     </div>
 
     <!-- MOBILE TABBAR -->
-    <nav class="mobile-tabbar">
+    <nav class="mobile-tabbar" aria-label="Main navigation">
       <a href="{% url 'dashboard' %}" class="tab-btn {% if request.path == '/dashboard/' %}active{% endif %}"><i class="fa-solid fa-house"></i> Home</a>
       <a href="{% url 'attendance' %}" class="tab-btn {% if request.path == '/attendance/' or request.path == '/attendance-saved/' %}active{% endif %}"><i class="fa-solid fa-clipboard-user"></i> Attd.</a>
       <a href="{% url 'child_record' %}" class="tab-btn {% if '/child' in request.path and 'record' in request.path %}active{% endif %}"><i class="fa-solid fa-children"></i> Children</a>
