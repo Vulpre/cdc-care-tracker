@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}Daily Attendance - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-clipboard-user"></i> Daily Roll Call Attendance{% endblock %}
+{% block mobile_title %}Daily Attendance{% endblock %}
+{% block mobile_topbar_left %}
+  <a href="/dashboard/" class="back-btn-desk"><i class="fa-solid fa-chevron-left"></i> Back</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-label{ font-size:14px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; display:block; }
+.card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 4px 12px rgba(0,0,0,0.02); }
+
+/* Date Navigator Bar */
+.date-nav-card {
+  background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:16px 20px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.03); margin-bottom:16px;
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+}
+.date-nav-controls {
+  display:flex; align-items:center; gap:8px;
+}
+.date-nav-btn {
+  background:#fff; border:1.5px solid var(--line); border-radius:8px; padding:8px 14px;
+  font-size:13px; font-weight:700; color:var(--ink); text-decoration:none; display:inline-flex;
+  align-items:center; gap:6px; transition:all 0.15s;
+}
+.date-nav-btn:hover:not(.disabled) {
+  border-color:var(--primary); color:var(--primary); background:rgba(28,79,64,0.04);
+}
+.date-nav-btn.disabled {
+  opacity:0.4; cursor:not-allowed; pointer-events:none;
+}
+.date-input-picker {
+  border:1.5px solid var(--line); background:#FAF8F3; border-radius:8px; padding:8px 12px;
+  font-size:13.5px; font-weight:700; color:var(--ink); outline:none; transition:border-color 0.2s;
+  cursor:pointer;
+}
+.date-input-picker:focus { border-color:var(--primary); }
+
+/* Notice Banners */
+.banner-past {
+  background:rgba(232,163,61,0.12); border:1px solid rgba(232,163,61,0.35); border-left:4px solid var(--accent);
+  border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--ink);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+}
+.banner-warn-overwrite {
+  background:rgba(183,64,44,0.08); border:1px solid rgba(183,64,44,0.3); border-left:4px solid var(--alert);
+  border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--alert);
+  display:flex; align-items:center; gap:10px; font-weight:600;
+}
+
+.attendance-header-card {
+  background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 24px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.03); margin-bottom:20px;
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+}
+.summary-pills { display:flex; gap:10px; align-items:center; }
+.sum-pill {
+  font-size:13px; font-weight:700; padding:6px 14px; border-radius:20px; display:inline-flex; align-items:center; gap:6px;
+}
+.sum-present { background:var(--ok-bg); color:var(--ok-text); }
+.sum-absent { background:rgba(183,64,44,0.1); color:var(--alert); }
+
+.quick-toolbar {
+  display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;
+}
+.quick-btn {
+  background:#fff; border:1.5px solid var(--line); border-radius:8px; padding:8px 14px;
+  font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; display:inline-flex;
+  align-items:center; gap:6px; transition:all 0.2s;
+}
+.quick-btn:hover {
+  border-color:var(--primary); color:var(--primary); background:rgba(28,79,64,0.04);
+}
+
+.child-att-row {
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  padding:16px 20px; border:1px solid var(--line); border-left:4px solid var(--ok-line);
+  border-radius:12px; background:#fff; margin-bottom:12px; transition:all 0.2s;
+}
+.child-att-row:hover { border-color:var(--primary); }
+.child-att-row.row-absent { border-left-color:var(--alert); background:rgba(183,64,44,0.02); }
+
+.radio-seg {
+  display:inline-flex; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; background:#F5F4EE;
+}
+.seg-btn {
+  display:inline-flex; align-items:center; gap:6px; padding:10px 16px; font-size:13px; font-weight:700;
+  cursor:pointer; color:var(--ink-soft); user-select:none; transition:all 0.15s; margin:0;
+}
+.seg-btn input { display:none; }
+.seg-btn.active-present {
+  background:var(--ok-text); color:#fff;
+}
+.seg-btn.active-absent {
+  background:var(--alert); color:#fff;
+}
+
+@media (max-width: 640px) {
+  .date-nav-card { flex-direction:column; align-items:stretch; }
+  .date-nav-controls { justify-content:space-between; }
+  .attendance-header-card { flex-direction:column; align-items:flex-start; }
+  .child-att-row { flex-direction:column; align-items:flex-start; gap:12px; }
+  .radio-seg { width:100%; display:flex; }
+  .seg-btn { flex:1; justify-content:center; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:800px; margin:0 auto;">
+
+  <!-- DATE PICKER & NAVIGATION BAR -->
+  <div class="date-nav-card">
+    <div class="date-nav-controls">
+      <a href="/attendance/?date={{ prev_date|date:'Y-m-d' }}" class="date-nav-btn" title="Previous Day">
+        <i class="fa-solid fa-chevron-left"></i> Previous Day
+      </a>
+      {% if next_date %}
+        <a href="/attendance/?date={{ next_date|date:'Y-m-d' }}" class="date-nav-btn" title="Next Day">
+          Next Day <i class="fa-solid fa-chevron-right"></i>
+        </a>
+      {% else %}
+        <span class="date-nav-btn disabled" title="Cannot select future dates">
+          Next Day <i class="fa-solid fa-chevron-right"></i>
+        </span>
+      {% endif %}
+    </div>
+
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label for="datePicker" style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-soft);">Date:</label>
+      <input
+        type="date"
+        id="datePicker"
+        class="date-input-picker"
+        value="{{ target_date|date:'Y-m-d' }}"
+        max="{{ today|date:'Y-m-d' }}"
+        onchange="window.location.href='/attendance/?date=' + this.value;"
+      >
+      {% if is_past %}
+        <a href="/attendance/" class="btn btn-outline" style="min-height:36px; padding:6px 12px; font-size:12px;" title="Jump to today">
+          <i class="fa-solid fa-calendar-day"></i> Today
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- NOTICE BANNERS -->
+  {% if is_past %}
+    <div class="banner-past">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent); font-size:16px;"></i>
+        <div>
+          <strong>Logging Past Attendance: {{ target_date|date:"l, F d, Y" }}</strong>
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:1px;">You are currently recording/editing attendance for a previous session.</div>
+        </div>
+      </div>
+      <a href="/attendance/" style="font-size:12px; font-weight:700; color:var(--primary); text-decoration:none;">
+        Back to Today <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  {% endif %}
+
+  {% if has_existing %}
+    <div class="banner-warn-overwrite">
+      <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;"></i>
+      <div>
+        Attendance already recorded for this date ({{ target_date|date:"M d, Y" }}). Current saved records are loaded below. Saving will update the existing records.
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TALLY HEADER CARD -->
+  <div class="attendance-header-card">
+    <div>
+      <div style="font-family:var(--font-display); font-size:20px; font-weight:700; color:var(--primary);">
+        {% if is_today %}Today's Roll Call{% else %}Roll Call for {{ target_date|date:"M d, Y" }}{% endif %}
+      </div>
+      <div style="font-size:13px; color:var(--ink-soft); margin-top:2px;">
+        <i class="fa-regular fa-calendar-check"></i> {{ target_date|date:"l, F d, Y" }} &bull; {{ children|length }} Enrolled
+        {% if has_existing %}
+          <span style="display:inline-block; margin-left:6px; color:var(--ok-text); font-weight:700;">&bull; <i class="fa-solid fa-check-circle"></i> Recorded</span>
+        {% else %}
+          <span style="display:inline-block; margin-left:6px; color:var(--accent); font-weight:700;">&bull; Not yet submitted</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="summary-pills">
+      <span class="sum-pill sum-present" id="tallyPresent"><i class="fa-solid fa-check"></i> <span id="countPresent">{{ present_tally }}</span> Present</span>
+      <span class="sum-pill sum-absent" id="tallyAbsent"><i class="fa-solid fa-xmark"></i> <span id="countAbsent">{{ absent_tally }}</span> Absent</span>
+    </div>
+  </div>
+
+  {% if children %}
+    <div class="quick-toolbar">
+      <button type="button" class="quick-btn" onclick="markAll('Present')">
+        <i class="fa-solid fa-check-double" style="color:var(--ok-text);"></i> Mark All Present
+      </button>
+      <button type="button" class="quick-btn" onclick="markAll('Absent')">
+        <i class="fa-solid fa-xmark" style="color:var(--alert);"></i> Mark All Absent
+      </button>
+    </div>
+  {% endif %}
+
+  <form method="POST" action="/attendance/" id="attendanceForm">
+    {% csrf_token %}
+    <input type="hidden" name="target_date" value="{{ target_date|date:'Y-m-d' }}">
+
+    <div style="margin-bottom:24px;">
+      {% for item in child_statuses %}
+        {% with child=item.child status=item.status %}
+          <div class="child-att-row {% if status == 'Absent' %}row-absent{% endif %}" id="row_{{ child.id }}">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:38px; height:38px; border-radius:50%; background:rgba(28,79,64,0.08); color:var(--primary); font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center;">
+                {{ child.first_name|make_list|first }}{{ child.last_name|make_list|first }}
+              </div>
+              <div>
+                <div style="font-size:15px; font-weight:700; color:var(--ink);">
+                  {{ child.first_name }} {{ child.last_name }}
+                </div>
+                <div style="font-size:12px; color:var(--ink-soft);">
+                  {{ child.gender }} &bull; {{ child.address|truncatechars:35 }}
+                </div>
+              </div>
+            </div>
+
+            <div class="radio-seg">
+              <label class="seg-btn {% if status == 'Present' %}active-present{% endif %}" id="lbl_pres_{{ child.id }}">
+                <input
+                  type="radio"
+                  name="status_{{ child.id }}"
+                  value="Present"
+                  {% if status == 'Present' %}checked{% endif %}
+                  onchange="updateRow('{{ child.id }}', 'Present')"
+                >
+                <i class="fa-solid fa-check"></i> Present
+              </label>
+              <label class="seg-btn {% if status == 'Absent' %}active-absent{% endif %}" id="lbl_abs_{{ child.id }}">
+                <input
+                  type="radio"
+                  name="status_{{ child.id }}"
+                  value="Absent"
+                  {% if status == 'Absent' %}checked{% endif %}
+                  onchange="updateRow('{{ child.id }}', 'Absent')"
+                >
+                <i class="fa-solid fa-xmark"></i> Absent
+              </label>
+            </div>
+          </div>
+        {% endwith %}
+      {% empty %}
+        <div class="card" style="text-align:center; padding:48px 24px; color:var(--ink-soft);">
+          <i class="fa-solid fa-children" style="font-size:36px; margin-bottom:12px; opacity:0.5;"></i>
+          <div style="font-size:16px; font-weight:700; color:var(--ink); margin-bottom:6px;">No children registered yet</div>
+          <div style="font-size:14px; margin-bottom:20px;">You must enroll children before logging attendance.</div>
+          <a href="/child-record/" class="btn btn-primary" style="display:inline-flex;">
+            <i class="fa-solid fa-user-plus"></i> Enroll First Child
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if children %}
+      <button
+        type="submit"
+        class="btn btn-primary btn-full"
+        style="font-size:16px; padding:16px;"
+        {% if has_existing %}onclick="return confirm('Attendance records already exist for this date. Are you sure you want to update/overwrite them?');"{% endif %}
+      >
+        <i class="fa-solid fa-floppy-disk"></i>
+        {% if has_existing %}
+          Update Attendance for {{ target_date|date:"M d, Y" }}
+        {% else %}
+          Save Attendance for {{ target_date|date:"M d, Y" }}
+        {% endif %}
+      </button>
+    {% endif %}
+  </form>
+</div>
+
+<script>
+function updateRow(childId, status) {
+  const row = document.getElementById('row_' + childId);
+  const lblPres = document.getElementById('lbl_pres_' + childId);
+  const lblAbs = document.getElementById('lbl_abs_' + childId);
+
+  if (status === 'Present') {
+    lblPres.classList.add('active-present');
+    lblAbs.classList.remove('active-absent');
+    row.classList.remove('row-absent');
+  } else {
+    lblPres.classList.remove('active-present');
+    lblAbs.classList.add('active-absent');
+    row.classList.add('row-absent');
+  }
+  recalcTallies();
+}
+
+function markAll(status) {
+  document.querySelectorAll('input[type="radio"]').forEach(r => {
+    if (r.value === status) {
+      r.checked = true;
+      const childId = r.name.replace('status_', '');
+      updateRow(childId, status);
+    }
+  });
+}
+
+function recalcTallies() {
+  let pres = 0;
+  let abs = 0;
+  document.querySelectorAll('input[type="radio"]:checked').forEach(r => {
+    if (r.value === 'Present') pres++;
+    else abs++;
+  });
+  document.getElementById('countPresent').innerText = pres;
+  document.getElementById('countAbsent').innerText = abs;
+}
+</script>
+{% endblock %}

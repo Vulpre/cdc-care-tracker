@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Monthly Attendance Preview - {{ data.month_name }} {{ data.year }} - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-file-invoice"></i> Monthly Attendance Report Preview{% endblock %}
+{% block mobile_title %}Monthly Report Preview{% endblock %}
+{% block mobile_topbar_left %}
+  <a href="/report/" class="back-btn-desk"><i class="fa-solid fa-chevron-left"></i> Reports</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Controls Bar (Hidden during print) */
+.controls-bar {
+  background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:16px 20px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.03); margin-bottom:24px;
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+}
+.export-actions {
+  display:flex; gap:10px; flex-wrap:wrap;
+}
+
+/* Printable Sheet */
+.print-sheet {
+  background:#fff; border:1px solid var(--line); border-radius:14px; padding:32px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.05); overflow-x:auto; margin-bottom:30px;
+}
+
+.report-header {
+  text-align:center; margin-bottom:20px;
+}
+.gov-sub {
+  font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;
+}
+.center-title {
+  font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--primary); margin-bottom:4px;
+}
+.report-period-title {
+  font-size:13px; font-weight:700; color:var(--ink); text-transform:uppercase; letter-spacing:0.5px;
+}
+
+.report-meta-grid {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;
+  background:#FAF8F3; border:1px solid var(--line); border-radius:10px; padding:12px 18px; margin-bottom:20px; font-size:13px;
+}
+.meta-lbl { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-soft); letter-spacing:0.5px; }
+.meta-val { font-weight:700; color:var(--ink); margin-top:2px; }
+
+/* Grid Table */
+.att-grid-table {
+  width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:16px; min-width:860px;
+}
+.att-grid-table th {
+  background:var(--primary); color:#fff; border:1px solid #2A5245; padding:6px 4px;
+  text-align:center; font-size:10.5px; font-weight:700; white-space:nowrap;
+}
+.att-grid-table td {
+  border:1px solid var(--line); padding:6px 4px; text-align:center; color:var(--ink);
+}
+.att-grid-table td.col-name {
+  text-align:left; font-weight:600; padding-left:8px; white-space:nowrap;
+}
+.att-grid-table tr:hover td {
+  background:rgba(28,79,64,0.03);
+}
+
+.cell-p {
+  background:#EAF5EE; color:var(--ok-text); font-weight:700;
+}
+.cell-a {
+  background:#FCE8E6; color:var(--alert); font-weight:700;
+}
+.cell-none {
+  color:#B0A99A;
+}
+
+.row-total td {
+  background:#E7F0EA; font-weight:700; border-color:#8FA89A;
+}
+
+/* Legend & Signatures */
+.legend-box {
+  font-size:12px; color:var(--ink-soft); margin-bottom:24px; padding-top:8px; border-top:1px solid var(--line);
+}
+.sig-row {
+  display:flex; justify-content:space-between; gap:40px; margin-top:40px; padding:0 20px;
+}
+.sig-col {
+  flex:1; max-width:300px;
+}
+.sig-line {
+  border-top:1.5px solid var(--ink); margin-top:50px; padding-top:6px; font-weight:700; font-size:13px;
+}
+.sig-role {
+  font-size:12px; color:var(--ink-soft);
+}
+
+/* Print Overrides */
+@media print {
+  body { background:#fff !important; }
+  .sidebar, .desktop-topbar, .mobile-topbar, .mobile-tabbar, .controls-bar { display:none !important; }
+  .main-wrapper, .content-scroll { padding:0 !important; overflow:visible !important; height:auto !important; }
+  .print-sheet {
+    border:none !important; box-shadow:none !important; padding:0 !important; width:100% !important; margin:0 !important;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:1100px; margin:0 auto;">
+
+  <!-- CONTROLS BAR -->
+  <div class="controls-bar">
+    <form method="GET" action="/report/attendance/preview/" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0;">
+      <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-soft);">Period:</label>
+      <select name="month" class="select" style="min-height:38px; padding:6px 12px; width:auto;" onchange="this.form.submit()">
+        {% for m in months_list %}
+          <option value="{{ m.num }}" {% if m.num == month %}selected{% endif %}>{{ m.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="year" class="select" style="min-height:38px; padding:6px 12px; width:auto;" onchange="this.form.submit()">
+        {% for y in years_list %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+
+    <div class="export-actions">
+      <button type="button" class="btn btn-outline" style="min-height:40px; padding:8px 16px;" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> Print Sheet
+      </button>
+      <a href="/report/attendance/pdf/?month={{ month }}&year={{ year }}" class="btn btn-outline" style="min-height:40px; padding:8px 16px;">
+        <i class="fa-solid fa-file-pdf" style="color:var(--alert);"></i> Download PDF
+      </a>
+      <a href="/report/attendance/excel/?month={{ month }}&year={{ year }}" class="btn btn-primary" style="min-height:40px; padding:8px 16px;">
+        <i class="fa-solid fa-file-excel"></i> Download Excel (.xlsx)
+      </a>
+    </div>
+  </div>
+
+  <!-- PRINTABLE DOCUMENT SHEET -->
+  <div class="print-sheet">
+    <div class="report-header">
+      <div class="gov-sub">Early Childhood Care and Development (ECCD) Program</div>
+      <div class="center-title">Child Development Center</div>
+      <div class="report-period-title">
+        ECCD Attendance Register for {{ data.month_name }} {{ data.year }}
+      </div>
+    </div>
+
+    <div class="report-meta-grid">
+      <div>
+        <div class="meta-lbl">Center Program</div>
+        <div class="meta-val">Child Development Center</div>
+      </div>
+      <div>
+        <div class="meta-lbl">Reporting Period</div>
+        <div class="meta-val">{{ data.month_name }} {{ data.year }}</div>
+      </div>
+      <div>
+        <div class="meta-lbl">Enrolled Children</div>
+        <div class="meta-val">{{ data.total_enrolled }} (M: {{ data.male_count }}, F: {{ data.female_count }})</div>
+      </div>
+      <div>
+        <div class="meta-lbl">Attendance Rate</div>
+        <div class="meta-val" style="color:var(--primary); font-size:15px;">{{ data.overall_rate }}%</div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE GRID -->
+    <table class="att-grid-table">
+      <thead>
+        <tr>
+          <th style="width:24px;">#</th>
+          <th style="width:75px;">Child ID</th>
+          <th style="width:180px;">Learner's Name</th>
+          <th style="width:30px;">Sex</th>
+          {% for d in data.days_range %}
+            <th style="width:20px;">{{ d }}</th>
+          {% endfor %}
+          <th style="width:35px;">P</th>
+          <th style="width:35px;">A</th>
+          <th style="width:40px;">Total</th>
+          <th style="width:45px;">Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in data.children_data %}
+          {% with child=item.child %}
+            <tr>
+              <td>{{ item.num }}</td>
+              <td style="font-family:var(--font-mono); font-size:10px;">CDC-{{ child.id|stringformat:"04d" }}</td>
+              <td class="col-name">{{ child.last_name }}, {{ child.first_name }}</td>
+              <td>{{ child.gender|make_list|first|upper }}</td>
+              {% for d_info in item.days %}
+                {% if d_info.code == 'P' %}
+                  <td class="cell-p">P</td>
+                {% elif d_info.code == 'A' %}
+                  <td class="cell-a">A</td>
+                {% else %}
+                  <td class="cell-none">&bull;</td>
+                {% endif %}
+              {% endfor %}
+              <td style="font-weight:700; color:var(--ok-text);">{{ item.present }}</td>
+              <td style="font-weight:700; color:var(--alert);">{{ item.absent }}</td>
+              <td style="font-weight:700;">{{ item.total }}</td>
+              <td style="font-weight:700;">{{ item.rate }}%</td>
+            </tr>
+          {% endwith %}
+        {% empty %}
+          <tr>
+            <td colspan="40" style="padding:24px; text-align:center; color:var(--ink-soft);">
+              No children enrolled in this center.
+            </td>
+          </tr>
+        {% endfor %}
+
+        <!-- DAILY TOTALS ROWS -->
+        <tr class="row-total">
+          <td colspan="4" style="text-align:right; padding-right:8px;">Total Present:</td>
+          {% for d in data.days_range %}
+            <td style="color:var(--ok-text);">
+              {% with d_cnt=data.class_daily_present %}
+                {{ d_cnt|default:0 }}
+              {% endwith %}
+            </td>
+          {% endfor %}
+          <td style="color:var(--ok-text);">{{ data.total_present_all }}</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr class="row-total">
+          <td colspan="4" style="text-align:right; padding-right:8px;">Total Absent:</td>
+          {% for d in data.days_range %}
+            <td style="color:var(--alert);">
+              {% with d_cnt=data.class_daily_absent %}
+                {{ d_cnt|default:0 }}
+              {% endwith %}
+            </td>
+          {% endfor %}
+          <td>—</td>
+          <td style="color:var(--alert);">{{ data.total_absent_all }}</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="legend-box">
+      <strong>LEGEND:</strong> &nbsp;&bull;&nbsp;
+      <strong style="color:var(--ok-text);">P</strong> = Present &nbsp;&bull;&nbsp;
+      <strong style="color:var(--alert);">A</strong> = Absent &nbsp;&bull;&nbsp;
+      <span style="color:var(--ink-soft);">&bull;</span> = No Session Logged / Weekend / Holiday
+    </div>
+
+    <div class="sig-row">
+      <div class="sig-col">
+        <div style="font-size:12px; font-weight:700; color:var(--ink-soft);">PREPARED BY:</div>
+        <div class="sig-line">{{ user_name|default:"Child Development Worker" }}</div>
+        <div class="sig-role">Day Care Teacher / Child Development Worker</div>
+      </div>
+      <div class="sig-col">
+        <div style="font-size:12px; font-weight:700; color:var(--ink-soft);">VERIFIED &amp; NOTED BY:</div>
+        <div class="sig-line">HON. BARANGAY CHAIRMAN</div>
+        <div class="sig-role">Barangay Council / ECCD Office</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

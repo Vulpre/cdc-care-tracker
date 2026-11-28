@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}CDC Care Tracker{% endblock %}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --stage-bg-1:#0F2B22;
+  --stage-bg-2:#0A1F19;
+  --app-bg:#FAF8F3;
+  --ink:#1E2A26;
+  --ink-soft:#5B655F;
+  --primary:#1C4F40;
+  --primary-deep:#123D31;
+  --accent:#E8A33D;
+  --alert:#B7402C;
+  --watch-bg:#FCEACB;
+  --watch-text:#8A5A12;
+  --ok-line:#8FA89A;
+  --ok-bg:#E7F0EA;
+  --ok-text:#2F5F45;
+  --line:#D8D3C4;
+  --font-display:'Fraunces',serif;
+  --font-body:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0; height:100vh; overflow:hidden;}
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:var(--app-bg);
+}
+a{ all:unset; box-sizing:border-box; cursor:pointer; }
+input, textarea, select{ font-family:inherit; }
+
+/* ── LAYOUT SHELL ── */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ── DESKTOP SIDEBAR ── */
+.sidebar {
+  width: 260px;
+  background: var(--primary-deep);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s;
+}
+.sidebar-header {
+  padding: 24px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--accent);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-nav {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-link i { font-size: 16px; width: 20px; text-align: center; }
+.nav-link:hover, .nav-link.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+/* ── MAIN CONTENT AREA ── */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; 
+  min-height: 0; /* fixes flexbox height blow-out */
+  background: var(--app-bg);
+  position: relative;
+}
+
+/* ── MOBILE TOPBAR (Hidden on Desktop) ── */
+.mobile-topbar { display: none; }
+
+/* ── DESKTOP TOPBAR ── */
+.desktop-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.desktop-topbar-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.back-btn-desk {
+  font-family: var(--font-body); font-size: 14px; color: var(--ink-soft); font-weight: 600; cursor:pointer;
+}
+.back-btn-desk:hover { color: var(--primary); }
+
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 40px;
+  min-height: 0; /* ensures scrolling works */
+}
+.content-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── MOBILE BOTTOM NAV (Hidden on Desktop) ── */
+.mobile-tabbar { display: none; }
+
+/* ── COMMON UI COMPONENTS ── */
+.badge {
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--alert); color: #fff;
+  font-family: var(--font-mono); font-size: 11px; display: inline-flex; align-items: center; justify-content: center;
+}
+
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:14px; border-radius:10px; padding:14px 20px; text-align:center; border:none; cursor:pointer; min-height:46px; touch-action:manipulation; text-decoration:none; }
+.btn-primary{ background:var(--accent); color:var(--ink); }
+.btn-primary:hover{ filter:brightness(0.95); }
+.btn-outline{ background:transparent; border:1.5px solid var(--line); color:var(--ink-soft); }
+.btn-danger{ background:var(--alert); color:#fff; }
+.btn-full{ width:100%; }
+
+.input, .textarea, .select {
+  border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:14px 16px;
+  font-size:14px; color:var(--ink); width:100%; min-height:48px; outline:none; transition:border-color 0.2s; box-sizing:border-box;
+}
+.input:focus, .textarea:focus, .select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(28,79,64,.1); }
+.textarea { min-height:100px; resize:vertical; }
+
+.field-group{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.field-label{ font-size:12px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ── RESPONSIVE GRIDS ── */
+.grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+.grid-3col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.grid-4col { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+
+/* ── MOBILE BREAKPOINT (<= 768px) ── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .app-container { flex-direction: column; }
+  
+  .desktop-topbar { display: none; }
+  
+  .mobile-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; background: #fff; border-bottom: 1px solid var(--line); flex-shrink: 0;
+  }
+  .mobile-wordmark { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--primary); }
+  
+  .content-scroll { padding: 20px 16px 30px; }
+  
+  .mobile-tabbar {
+    display: flex; justify-content: space-around; padding: 12px 6px 20px;
+    background: #fff; border-top: 1px solid var(--line); flex-shrink: 0;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.03);
+  }
+  .tab-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--ink-soft); touch-action: manipulation; font-weight:600;
+  }
+  .tab-btn i { font-size: 18px; margin-bottom:2px; }
+  .tab-btn.active { color: var(--primary); font-weight: 700; }
+  
+  .grid-2col, .grid-3col, .grid-4col { grid-template-columns: 1fr; gap:16px; }
+}
+</style>
+
+{% block extra_css %}{% endblock %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+<div class="app-container">
+  
+  <!-- ── SIDEBAR (DESKTOP ONLY) ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--primary-deep); display:flex; align-items:center; justify-content:center; font-size:16px;">
+          <i class="fa-solid fa-children"></i>
+        </div>
+        <div>
+          <div style="font-weight:700; font-size:15px; color:#fff;">CDC Care Tracker</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{% url 'dashboard' %}" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}"><i class="fa-solid fa-house"></i> Dashboard</a>
+      <a href="{% url 'attendance' %}" class="nav-link {% if request.path == '/attendance/' or request.path == '/attendance-saved/' %}active{% endif %}"><i class="fa-solid fa-clipboard-user"></i> Daily Attendance</a>
+      <a href="{% url 'child_record' %}" class="nav-link {% if '/child' in request.path and 'record' in request.path %}active{% endif %}"><i class="fa-solid fa-children"></i> Children Directory</a>
+      <a href="{% url 'search' %}" class="nav-link {% if '/search' in request.path %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i> Search Records</a>
+      <a href="{% url 'add_flag' %}" class="nav-link {% if '/flag' in request.path %}active{% endif %}"><i class="fa-solid fa-flag"></i> Add a Flag</a>
+      <a href="{% url 'report' %}" class="nav-link {% if '/report' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports &amp; Analytics</a>
+    </nav>
+    <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.12); margin-top:auto;">
+      {% if request.user.is_authenticated %}
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <div style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;">
+            {{ request.user.username|make_list|first|upper }}
+          </div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              {{ request.user.get_full_name|default:request.user.username }}
+            </div>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6);">Day Care Worker</div>
+          </div>
+        </div>
+      {% endif %}
+      <a href="/logout/" style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:rgba(255,255,255,0.85); font-weight:600; text-decoration:none; padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.color='#fff';" onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.85)';">
+        <i class="fa-solid fa-right-from-bracket"></i> Log Out
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="main-wrapper">
+    
+    <!-- MOBILE TOPBAR -->
+    <header class="mobile-topbar">
+      {% block mobile_topbar_left %}{% endblock %}
+      <span class="mobile-wordmark">{% block mobile_title %}CDC Care Tracker{% endblock %}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        {% block mobile_topbar_right %}{% endblock %}
+        <a href="{% url 'search' %}" style="width:34px; height:34px; border-radius:8px; background:rgba(28,79,64,0.06); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:14px; text-decoration:none;" title="Search"><i class="fa-solid fa-magnifying-glass"></i></a>
+        <a href="/logout/" style="width:34px; height:34px; border-radius:8px; background:rgba(183,64,44,0.08); color:var(--alert); display:flex; align-items:center; justify-content:center; font-size:14px; text-decoration:none;" title="Log Out" onclick="return confirm('Log out of CDC Care Tracker?');"><i class="fa-solid fa-right-from-bracket"></i></a>
+      </div>
+    </header>
+
+    <!-- DESKTOP TOPBAR -->
+    <header class="desktop-topbar">
+      <div class="desktop-topbar-title">
+        {% block desktop_title %}Overview{% endblock %}
+      </div>
+      <div>
+        {% block desktop_topbar_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <!-- SCROLLABLE CONTENT -->
+    <div class="content-scroll">
+      <div class="content-inner">
+        {% if messages %}
+          {% for message in messages %}
+            <div style="background:{% if message.tags == 'success' %}#EBF7F0{% else %}rgba(183,64,44,0.08){% endif %}; border:1px solid {% if message.tags == 'success' %}#A3D9BC{% else %}rgba(183,64,44,0.3){% endif %}; border-left:4px solid {% if message.tags == 'success' %}#1A6E3C{% else %}#B7402C{% endif %}; border-radius:10px; padding:12px 16px; font-size:13px; color:{% if message.tags == 'success' %}#1A6E3C{% else %}#B7402C{% endif %}; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+              <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+    <!-- MOBILE TABBAR -->
+    <nav class="mobile-tabbar">
+      <a href="{% url 'dashboard' %}" class="tab-btn {% if request.path == '/dashboard/' %}active{% endif %}"><i class="fa-solid fa-house"></i> Home</a>
+      <a href="{% url 'attendance' %}" class="tab-btn {% if request.path == '/attendance/' or request.path == '/attendance-saved/' %}active{% endif %}"><i class="fa-solid fa-clipboard-user"></i> Attd.</a>
+      <a href="{% url 'child_record' %}" class="tab-btn {% if '/child' in request.path and 'record' in request.path %}active{% endif %}"><i class="fa-solid fa-children"></i> Children</a>
+      <a href="{% url 'search' %}" class="tab-btn {% if '/search' in request.path %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+      <a href="{% url 'add_flag' %}" class="tab-btn {% if '/flag' in request.path %}active{% endif %}"><i class="fa-solid fa-flag"></i> Flags</a>
+      <a href="{% url 'report' %}" class="tab-btn {% if '/report' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports</a>
+    </nav>
+
+  </main>
+</div>
+{% block extra_js %}{% endblock %}
+<script>
+// Global form loading state
+document.addEventListener('DOMContentLoaded', () => {
+  const forms = document.querySelectorAll('form:not(.no-loader)');
+  forms.forEach(form => {
+    form.addEventListener('submit', (e) => {
+      // Basic HTML5 validation check
+      if (!form.checkValidity()) {
+        return;
+      }
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        // Prevent double submission
+        if (form.dataset.submitted === 'true') {
+          e.preventDefault();
+          return;
+        }
+        form.dataset.submitted = 'true';
+        
+        // Add loading state
+        const loadingText = submitBtn.dataset.loadingText || 'Saving...';
+        const originalText = submitBtn.innerHTML;
+        submitBtn.dataset.originalText = originalText;
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ' + loadingText;
+        submitBtn.style.opacity = '0.8';
+        submitBtn.style.cursor = 'not-allowed';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

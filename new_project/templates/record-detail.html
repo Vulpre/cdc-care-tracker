@@ -1,0 +1,700 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ child.first_name }} {{ child.last_name }} - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-address-card"></i> Child Record Details{% endblock %}
+{% block mobile_title %}Record Details{% endblock %}
+{% block mobile_topbar_left %}
+  <a href="/child-record/" class="back-btn-desk"><i class="fa-solid fa-chevron-left"></i> Back</a>
+{% endblock %}
+{% block desktop_topbar_actions %}
+  <a href="/child-record/" class="btn btn-outline" style="min-height:38px; padding:8px 16px;"><i class="fa-solid fa-chevron-left"></i> Back to Directory</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-label{ font-size:13px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; display:block; }
+.card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 4px 12px rgba(0,0,0,0.02); margin-bottom:24px; }
+
+.profile-card-header {
+  display:flex; align-items:center; gap:16px; padding-bottom:20px; border-bottom:1px solid var(--line);
+}
+.profile-avatar-lg {
+  width:64px; height:64px; border-radius:50%; background:rgba(28,79,64,0.1); color:var(--primary);
+  font-family:var(--font-display); font-size:24px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  transition: all 0.3s ease;
+}
+.profile-avatar-lg.flag { background:rgba(183,64,44,0.12); color:var(--alert); }
+
+.profile-name { font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--primary); margin:0 0 4px 0; word-break:break-word; }
+.profile-id { font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:20px 0; }
+.detail-item { display:flex; flex-direction:column; gap:4px; }
+.detail-label { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-soft); letter-spacing:0.5px; }
+.detail-value { font-size:14px; font-weight:600; color:var(--ink); word-break:break-word; }
+
+.action-row { display:flex; gap:10px; flex-wrap:wrap; padding-top:16px; border-top:1px solid var(--line); }
+
+.hist-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 16px; border:1px solid var(--line); border-radius:10px;
+  background:#fff; margin-bottom:8px; font-size:13px; font-weight:600;
+}
+.tag{ font-family:var(--font-mono); font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; white-space:nowrap; flex-shrink:0; display:inline-flex; align-items:center; gap:5px; }
+.tag-ok{ background:var(--ok-bg); color:var(--ok-text); }
+.tag-alert{ background:var(--alert); color:#fff; }
+
+/* ── IN-APP TOAST FEEDBACK ── */
+.inpage-toast-container {
+  margin-bottom: 16px;
+}
+.inpage-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  animation: slideInDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.inpage-toast.success {
+  background: #EBF7F0;
+  border: 1px solid #A3D9BC;
+  border-left: 5px solid #1A6E3C;
+  color: #1A6E3C;
+}
+.inpage-toast.error {
+  background: rgba(183,64,44,0.08);
+  border: 1px solid rgba(183,64,44,0.25);
+  border-left: 5px solid var(--alert);
+  color: var(--alert);
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── IN-APP CONFIRMATION MODAL ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 30, 24, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-dialog {
+  width: 100%;
+  max-width: 480px;
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-backdrop.open .modal-dialog {
+  transform: scale(1) translateY(0);
+}
+.modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(28, 79, 64, 0.12);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  padding: 20px 22px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(28, 79, 64, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 4px 0;
+}
+.modal-subtitle {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.4;
+}
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.modal-close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink);
+}
+.modal-close-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.modal-body {
+  padding: 18px 22px;
+}
+.flag-detail-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--alert);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.flag-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.flag-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  letter-spacing: 0.5px;
+}
+.flag-detail-val {
+  font-weight: 600;
+  color: var(--ink);
+}
+.flag-note-box {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.flag-note-text {
+  margin: 4px 0 0 0;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.45;
+  font-style: italic;
+  word-break: break-word;
+}
+.modal-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  background: rgba(28, 79, 64, 0.05);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(28, 79, 64, 0.1);
+}
+.modal-notice i {
+  color: var(--primary);
+  font-size: 14px;
+  margin-top: 1px;
+}
+.modal-error-box {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(183, 64, 44, 0.08);
+  border: 1px solid rgba(183, 64, 44, 0.25);
+  border-left: 4px solid var(--alert);
+  border-radius: 8px;
+  color: var(--alert);
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-footer {
+  padding: 14px 22px 18px;
+  background: #fdfdfd;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.modal-footer .btn {
+  min-height: 40px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 9px;
+  transition: all 0.15s ease;
+}
+.btn-resolve-confirm {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+.btn-resolve-confirm:hover:not(:disabled) {
+  background: #143b30;
+  box-shadow: 0 4px 12px rgba(28, 79, 64, 0.25);
+}
+.btn-resolve-confirm:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .detail-grid { grid-template-columns:1fr; gap:12px; }
+  .action-row { flex-direction:column; }
+  .modal-dialog { max-width: 100%; margin: 0; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer .btn { width: 100%; min-height: 44px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<form style="display:none;">{% csrf_token %}</form>
+
+<!-- LIVE IN-PAGE TOAST FEEDBACK -->
+<div id="inpageToastContainer" class="inpage-toast-container" aria-live="polite"></div>
+
+<div class="grid-2col" style="align-items:start;">
+  <!-- LEFT: PROFILE -->
+  <div>
+    <span class="section-label">Child Information</span>
+    <div class="card">
+      <div class="profile-card-header">
+        <div class="profile-avatar-lg {% if child.has_active_flags %}flag{% endif %}" id="childAvatar">
+          {{ child.first_name|make_list|first }}{{ child.last_name|make_list|first }}
+        </div>
+        <div style="min-width:0; flex:1;">
+          <h2 class="profile-name">{{ child.first_name }} {{ child.last_name }}</h2>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="profile-id">ID: CDC-{{ child.id|stringformat:"04d" }}</span>
+            <span id="childStatusTag">
+              {% if child.has_active_flags %}
+                <span class="tag tag-alert"><i class="fa-solid fa-flag"></i> Flagged</span>
+              {% else %}
+                <span class="tag tag-ok"><i class="fa-solid fa-check"></i> In Good Standing</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label">Date of Birth</span>
+          <span class="detail-value"><i class="fa-solid fa-cake-candles" style="color:var(--accent); margin-right:4px;"></i> {{ child.date_of_birth|date:"M d, Y" }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Gender</span>
+          <span class="detail-value"><i class="fa-solid fa-venus-mars" style="color:var(--primary); margin-right:4px;"></i> {{ child.gender }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Barangay</span>
+          <span class="detail-value"><i class="fa-solid fa-map-pin" style="color:var(--primary); margin-right:4px;"></i> {{ child.barangay|default:"—" }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Residential Address</span>
+          <span class="detail-value"><i class="fa-solid fa-location-dot" style="color:var(--alert); margin-right:4px;"></i> {{ child.address }}</span>
+        </div>
+      </div>
+      
+      <div class="action-row">
+        <a href="/child/{{ child.id }}/edit/" class="btn btn-outline" style="flex:1;">
+          <i class="fa-solid fa-pen"></i> Edit Record
+        </a>
+        <a href="/add-flag/?child={{ child.id }}" class="btn btn-outline" style="flex:1;">
+          <i class="fa-solid fa-flag"></i> Add Flag
+        </a>
+        <a href="/child/{{ child.id }}/delete/" class="btn btn-danger" style="flex:1;">
+          <i class="fa-solid fa-trash"></i> Delete
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: FLAGS & ATTENDANCE -->
+  <div>
+    <span class="section-label">Active Flags &amp; Alerts</span>
+    <div id="activeFlagsContainer" style="margin-bottom:24px;">
+      {% for flag in active_flags %}
+        <div class="card flag-card" id="flag-card-{{ flag.id }}" style="border-left:4px solid var(--alert); padding:18px; margin-bottom:12px; transition:all 0.25s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+            <strong style="color:var(--alert); font-size:14px;"><i class="fa-solid fa-triangle-exclamation"></i> {{ flag.flag_type }}</strong>
+            <span style="font-size:12px; color:var(--ink-soft);">{{ flag.created_at|date:"M d, Y" }}</span>
+          </div>
+          <p style="font-size:13px; color:var(--ink); margin:0 0 14px 0; line-height:1.5;">{{ flag.note|default:"No notes provided." }}</p>
+          <button type="button"
+                  class="btn btn-outline btn-full btn-resolve-trigger"
+                  data-flag-id="{{ flag.id }}"
+                  data-flag-type="{{ flag.flag_type }}"
+                  data-flag-date="{{ flag.created_at|date:'M d, Y' }}"
+                  data-flag-note="{{ flag.note|default:'' }}"
+                  data-resolve-url="{% url 'resolve_flag' flag.id %}"
+                  style="min-height:36px; padding:8px 12px; font-size:12px;">
+            <i class="fa-solid fa-check"></i> Mark as Resolved
+          </button>
+        </div>
+      {% empty %}
+        <div class="card empty-flags-card" id="emptyFlagsCard" style="padding:20px; text-align:center; color:var(--ink-soft); font-size:13px;">
+          <i class="fa-solid fa-circle-check" style="color:var(--ok-text); font-size:24px; margin-bottom:6px; display:block;"></i>
+          No active flags for this child.
+        </div>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span class="section-label" style="margin-bottom:0;">Recent Attendance</span>
+      <a href="/attendance/" style="font-size:12px; font-weight:700; color:var(--primary); text-decoration:none;">Log New <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+    <div>
+      {% for att in attendances %}
+        <div class="hist-row">
+          <span><i class="fa-regular fa-calendar" style="color:var(--ink-soft); margin-right:6px;"></i> {{ att.date|date:"M d, Y" }}</span>
+          {% if att.status == 'Present' %}
+            <span class="tag tag-ok"><i class="fa-solid fa-check"></i> Present</span>
+          {% else %}
+            <span class="tag tag-alert"><i class="fa-solid fa-xmark"></i> Absent</span>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="card" style="padding:20px; text-align:center; color:var(--ink-soft); font-size:13px;">
+          No attendance sessions logged for this child yet.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── IN-APP CONFIRMATION MODAL ── -->
+<div id="resolveModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-icon-badge">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <h3 id="modalTitle" class="modal-title">Mark Flag as Resolved?</h3>
+          <p id="modalDesc" class="modal-subtitle">Confirm resolution of this active flag.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Close dialog">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="flag-detail-card">
+          <div class="flag-detail-item">
+            <span class="flag-detail-label">Child</span>
+            <span class="flag-detail-val" id="modalChildName">{{ child.first_name }} {{ child.last_name }}</span>
+          </div>
+          <div class="flag-detail-item">
+            <span class="flag-detail-label">Flag Type</span>
+            <span class="flag-detail-val" style="color:var(--alert); font-weight:700;" id="modalFlagType"><i class="fa-solid fa-triangle-exclamation"></i> Flag</span>
+          </div>
+          <div class="flag-detail-item" id="modalDateRow">
+            <span class="flag-detail-label">Date Flagged</span>
+            <span class="flag-detail-val" id="modalFlagDate"></span>
+          </div>
+          <div class="flag-note-box" id="modalNoteBox">
+            <span class="flag-detail-label">Teacher Note</span>
+            <p class="flag-note-text" id="modalFlagNote"></p>
+          </div>
+        </div>
+
+        <div class="modal-notice">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Marking this flag as resolved indicates that the concern has been addressed with the child or family and will clear this active alert.</span>
+        </div>
+
+        <div id="modalErrorAlert" class="modal-error-box" style="display:none;" role="alert">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="modalErrorMsg">Failed to resolve flag. Please check your connection and try again.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="modalCancelBtn">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-resolve-confirm" id="modalConfirmBtn">
+          <span id="modalBtnNormalText"><i class="fa-solid fa-check"></i> Mark as Resolved</span>
+          <span id="modalBtnLoadingText" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i> Resolving...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const modal = document.getElementById('resolveModal');
+  const closeBtn = document.getElementById('modalCloseBtn');
+  const cancelBtn = document.getElementById('modalCancelBtn');
+  const confirmBtn = document.getElementById('modalConfirmBtn');
+  const btnNormalText = document.getElementById('modalBtnNormalText');
+  const btnLoadingText = document.getElementById('modalBtnLoadingText');
+  const modalFlagType = document.getElementById('modalFlagType');
+  const modalFlagDate = document.getElementById('modalFlagDate');
+  const modalFlagNote = document.getElementById('modalFlagNote');
+  const modalErrorAlert = document.getElementById('modalErrorAlert');
+  const modalErrorMsg = document.getElementById('modalErrorMsg');
+  const toastContainer = document.getElementById('inpageToastContainer');
+
+  let activeTriggerBtn = null;
+  let pendingResolveUrl = null;
+  let pendingFlagId = null;
+  let pendingFlagType = '';
+
+  function getCsrfToken() {
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (input) return input.value;
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+  }
+
+  function openModal(trigger) {
+    activeTriggerBtn = trigger;
+    pendingFlagId = trigger.dataset.flagId;
+    pendingFlagType = trigger.dataset.flagType || 'Flag';
+    pendingResolveUrl = trigger.dataset.resolveUrl;
+
+    modalFlagType.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + pendingFlagType;
+    modalFlagDate.textContent = trigger.dataset.flagDate || 'Recently';
+    modalFlagNote.textContent = trigger.dataset.flagNote || 'No notes provided.';
+
+    modalErrorAlert.style.display = 'none';
+    setLoading(false);
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Trap focus inside modal: start with Cancel button for safe navigation
+    setTimeout(() => {
+      cancelBtn.focus();
+    }, 50);
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+    modalErrorAlert.style.display = 'none';
+    setLoading(false);
+
+    if (activeTriggerBtn && document.body.contains(activeTriggerBtn)) {
+      activeTriggerBtn.focus();
+    }
+    activeTriggerBtn = null;
+    pendingResolveUrl = null;
+    pendingFlagId = null;
+  }
+
+  function setLoading(loading) {
+    if (loading) {
+      confirmBtn.disabled = true;
+      cancelBtn.disabled = true;
+      closeBtn.disabled = true;
+      btnNormalText.style.display = 'none';
+      btnLoadingText.style.display = 'inline-flex';
+    } else {
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+      closeBtn.disabled = false;
+      btnNormalText.style.display = 'inline-flex';
+      btnLoadingText.style.display = 'none';
+    }
+  }
+
+  function showToast(message, type) {
+    toastContainer.innerHTML = `
+      <div class="inpage-toast ${type === 'error' ? 'error' : 'success'}">
+        <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    setTimeout(() => {
+      const toast = toastContainer.querySelector('.inpage-toast');
+      if (toast) {
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px)';
+        setTimeout(() => toastContainer.innerHTML = '', 300);
+      }
+    }, 4500);
+  }
+
+  function checkEmptyFlags() {
+    const container = document.getElementById('activeFlagsContainer');
+    const remainingCards = container ? container.querySelectorAll('.flag-card') : [];
+    if (remainingCards.length === 0) {
+      if (container && !container.querySelector('#emptyFlagsCard')) {
+        container.innerHTML = `
+          <div class="card empty-flags-card" id="emptyFlagsCard" style="padding:20px; text-align:center; color:var(--ink-soft); font-size:13px; animation:slideInDown 0.3s ease;">
+            <i class="fa-solid fa-circle-check" style="color:var(--ok-text); font-size:24px; margin-bottom:6px; display:block;"></i>
+            No active flags for this child.
+          </div>
+        `;
+      }
+      const avatar = document.getElementById('childAvatar');
+      if (avatar) avatar.classList.remove('flag');
+
+      const statusTag = document.getElementById('childStatusTag');
+      if (statusTag) {
+        statusTag.innerHTML = '<span class="tag tag-ok"><i class="fa-solid fa-check"></i> In Good Standing</span>';
+      }
+    }
+  }
+
+  // Bind trigger buttons
+  function bindTriggers() {
+    document.querySelectorAll('.btn-resolve-trigger').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openModal(this);
+      });
+    });
+  }
+  bindTriggers();
+
+  // Close event listeners
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+
+  // Click outside dialog to dismiss
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Keyboard accessibility: ESC to close, Tab trapping
+  document.addEventListener('keydown', function(e) {
+    if (!modal.classList.contains('open')) return;
+
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      closeModal();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const focusables = [closeBtn, cancelBtn, confirmBtn].filter(el => !el.disabled && el.offsetParent !== null);
+      if (focusables.length === 0) return;
+
+      const firstEl = focusables[0];
+      const lastEl = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      } else {
+        if (document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      }
+    }
+  });
+
+  // Confirm resolve action
+  confirmBtn.addEventListener('click', function() {
+    if (!pendingResolveUrl) return;
+
+    setLoading(true);
+    modalErrorAlert.style.display = 'none';
+
+    fetch(pendingResolveUrl, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': getCsrfToken(),
+        'Accept': 'application/json'
+      }
+    })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('HTTP ' + res.status);
+      }
+      return res.json();
+    })
+    .then(data => {
+      const resolvedFlagId = pendingFlagId;
+      const resolvedType = pendingFlagType;
+      closeModal();
+
+      // Animate card removal
+      const card = document.getElementById('flag-card-' + resolvedFlagId);
+      if (card) {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.96) translateY(-8px)';
+        card.style.maxHeight = card.scrollHeight + 'px';
+        card.style.overflow = 'hidden';
+        setTimeout(() => {
+          card.style.transition = 'all 0.3s ease';
+          card.style.maxHeight = '0';
+          card.style.paddingTop = '0';
+          card.style.paddingBottom = '0';
+          card.style.marginTop = '0';
+          card.style.marginBottom = '0';
+          setTimeout(() => {
+            card.remove();
+            checkEmptyFlags();
+          }, 300);
+        }, 120);
+      } else {
+        checkEmptyFlags();
+      }
+
+      showToast(data.message || `Flag '${resolvedType}' marked as resolved.`, 'success');
+    })
+    .catch(err => {
+      console.error('Resolve error:', err);
+      setLoading(false);
+      modalErrorAlert.style.display = 'flex';
+      modalErrorMsg.textContent = 'Could not resolve flag. Please check your connection and try again.';
+    });
+  });
+})();
+</script>
+{% endblock %}

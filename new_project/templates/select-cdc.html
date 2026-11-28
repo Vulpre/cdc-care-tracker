@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Select Center - CDC Care Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --app-bg:#FAF8F3; --ink:#1E2A26; --ink-soft:#5B655F; --primary:#1C4F40; --accent:#E8A33D; --line:#D8D3C4;
+  --font-display:'Fraunces',serif; --font-body:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0; height:100%;}
+body{ font-family:var(--font-body); color:var(--ink); background:var(--app-bg); display:flex; align-items:center; justify-content:center; padding:20px; }
+a{ all:unset; box-sizing:border-box; cursor:pointer; }
+
+.card {
+  width: 100%; max-width: 500px; background: #fff; border-radius: 20px;
+  padding: 40px 32px; box-shadow: 0 12px 30px rgba(0,0,0,0.05); border: 1px solid var(--line);
+}
+.title { font-family:var(--font-display); font-weight:700; font-size:24px; color:var(--primary); text-align:center; margin-bottom:8px; }
+.sub { font-size:15px; color:var(--ink-soft); text-align:center; margin-bottom:32px; line-height:1.5; }
+
+.list-row {
+  display:flex; justify-content:space-between; align-items:center; padding:16px 20px;
+  border:1.5px solid var(--line); border-radius:12px; font-weight:600; font-size:15px; margin-bottom:12px;
+  transition:0.2s; cursor:pointer;
+}
+.list-row:hover { border-color:var(--primary); background:rgba(28,79,64,0.02); transform:translateY(-1px); }
+.list-row.selected { border-color:var(--primary); border-left:4px solid var(--primary); background:rgba(28,79,64,0.05); }
+
+.btn-primary {
+  display:block; width:100%; background:var(--accent); color:var(--ink);
+  font-weight:700; font-size:15px; border-radius:10px; padding:16px; text-align:center; margin-top:24px; transition:0.2s;
+}
+.btn-primary:hover { filter:brightness(0.95); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="title">Select your CDC</div>
+  <div class="sub">You are assigned to multiple centers. Choose which one to open.</div>
+  
+  <a class="list-row selected">
+    <span>Child Development Center - Morning</span>
+  </a>
+  <a class="list-row">
+    <span>Child Development Center - Afternoon</span>
+  </a>
+  
+  <a href="/dashboard/" class="btn-primary">Continue</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Add a Flag - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-flag"></i> Add Child Flag / Alert{% endblock %}
+{% block mobile_title %}Add a Flag{% endblock %}
+{% block mobile_topbar_left %}
+  <a href="/dashboard/" class="back-btn-desk"><i class="fa-solid fa-chevron-left"></i> Back</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:32px; box-shadow:0 4px 14px rgba(0,0,0,0.03); }
+.hint { font-size:14px; color:var(--ink-soft); margin-bottom:24px; line-height:1.6; }
+.flag-info-banner {
+  background:rgba(232,163,61,0.1); border:1px solid rgba(232,163,61,0.3); border-left:4px solid var(--accent);
+  border-radius:10px; padding:14px 16px; margin-bottom:24px; font-size:13px; color:var(--ink);
+  display:flex; align-items:flex-start; gap:10px; line-height:1.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:600px; margin:0 auto;">
+  <div class="card">
+    <div class="flag-info-banner">
+      <i class="fa-solid fa-circle-info" style="color:var(--accent); font-size:16px; margin-top:2px;"></i>
+      <div>
+        <strong>What are flags for?</strong> Flags alert the center team about developmental concerns, recurring absences, underweight observations, or behavioral patterns so they can be followed up.
+      </div>
+    </div>
+
+    <form method="POST" action="/add-flag/">
+      {% csrf_token %}
+      <div class="field-group">
+        <label class="field-label">Select Child *</label>
+        <select name="child" class="select" required>
+          {% for child in children %}
+            <option value="{{ child.id }}" {% if selected_child_id and selected_child_id|slugify == child.id|slugify %}selected{% endif %}>
+              {{ child.first_name }} {{ child.last_name }} ({{ child.gender }}, {{ child.address|truncatechars:25 }})
+            </option>
+          {% empty %}
+            <option disabled>No children registered yet</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Flag Type *</label>
+        <select name="flag_type" class="select" required>
+          <option value="Absence streak">Absence streak</option>
+          <option value="Underweight">Underweight</option>
+          <option value="Illness">Illness</option>
+          <option value="Behavioral">Behavioral</option>
+        </select>
+      </div>
+
+      <div class="field-group" style="margin-bottom:24px;">
+        <label class="field-label">Notes / Case Details (Optional)</label>
+        <textarea name="note" class="textarea" placeholder="Provide context, observations, or instructions for the health worker…"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" style="font-size:15px; padding:15px;">
+        <i class="fa-solid fa-flag"></i> Save Flag Alert
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

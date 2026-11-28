@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Saved - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-circle-check"></i> Attendance Recorded{% endblock %}
+{% block mobile_title %}Attendance Saved{% endblock %}
+{% block mobile_topbar_left %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.success-card {
+  background:#fff; border:1px solid var(--line); border-radius:14px; padding:40px 32px;
+  box-shadow:0 12px 30px rgba(0,0,0,0.05); text-align:center; max-width:520px; margin:40px auto;
+}
+.confirm-icon {
+  width:80px; height:80px; border-radius:50%; background:var(--ok-bg); color:var(--ok-text);
+  display:flex; align-items:center; justify-content:center; font-size:36px; border:3px solid var(--ok-line);
+  margin:0 auto 24px;
+}
+.confirm-title { font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--primary); margin-bottom:12px; }
+.confirm-detail {
+  font-size:14px; color:var(--ink-soft); background:#FAF8F3; border:1px solid var(--line);
+  border-left:4px solid var(--ok-line); border-radius:10px; padding:16px 20px; line-height:1.7;
+  margin-bottom:28px; text-align:left;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-card">
+  <div class="confirm-icon"><i class="fa-solid fa-check"></i></div>
+  <div class="confirm-title">Attendance Recorded!</div>
+  
+  <div class="confirm-detail">
+    <div style="font-size:16px; font-weight:700; color:var(--ink); margin-bottom:6px;">
+      <i class="fa-regular fa-calendar-check" style="color:var(--primary);"></i>
+      {% if saved_date %}
+        Session Date: {{ saved_date|date:"l, F d, Y" }}
+      {% else %}
+        Today's Session
+      {% endif %}
+    </div>
+    <div style="font-size:14px; color:var(--ink); font-weight:600;">
+      <span style="color:var(--ok-text);"><i class="fa-solid fa-check"></i> {{ present|default:0 }} Present</span>
+      &nbsp;&bull;&nbsp;
+      <span style="color:var(--alert);"><i class="fa-solid fa-xmark"></i> {{ absent|default:0 }} Absent</span>
+    </div>
+    <div style="font-size:12px; color:var(--ink-soft); margin-top:4px;">
+      All records have been securely stored in the system with zero duplicate entries.
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    {% if saved_date %}
+      <a href="/attendance/?date={{ saved_date|date:'Y-m-d' }}" class="btn btn-outline btn-full">
+        <i class="fa-solid fa-eye"></i> Review or Edit This Session
+      </a>
+    {% endif %}
+    <a href="/attendance/" class="btn btn-outline btn-full">
+      <i class="fa-solid fa-calendar-day"></i> Go to Today's Attendance
+    </a>
+    <a href="/dashboard/" class="btn btn-primary btn-full">
+      <i class="fa-solid fa-house"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

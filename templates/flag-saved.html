@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Flag Saved - CDC Care Tracker{% endblock %}
+{% block desktop_title %}<i class="fa-solid fa-circle-check"></i> Flag Saved{% endblock %}
+{% block mobile_title %}Flag Saved{% endblock %}
+{% block mobile_topbar_left %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.success-card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:40px 32px; box-shadow:0 12px 30px rgba(0,0,0,0.05); text-align:center; max-width:500px; margin:40px auto; }
+.confirm-icon { width:80px; height:80px; border-radius:50%; background:var(--ok-bg); color:var(--ok-text); display:flex; align-items:center; justify-content:center; font-size:36px; border:3px solid var(--ok-line); margin:0 auto 24px; }
+.confirm-title { font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--primary); margin-bottom:16px; }
+.confirm-detail { font-size:15px; color:var(--ink-soft); background:#fafafa; border:1px solid var(--line); border-left:4px solid var(--ok-line); border-radius:10px; padding:16px 20px; line-height:1.7; margin-bottom:32px; text-align:left; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-card">
+  <div class="confirm-icon"><i class="fa-solid fa-check"></i></div>
+  <div class="confirm-title">Flag Recorded!</div>
+  <div class="confirm-detail">
+    <strong>{{ child_name|default:"Child Record" }}</strong><br>
+    The flag ({{ flag_type|default:"Flag" }}) has been attached to the record and will appear on the dashboard.
+  </div>
+  <a href="/dashboard/" class="btn btn-primary btn-full"><i class="fa-solid fa-house"></i> Back to Dashboard</a>
+</div>
+{% endblock %}
