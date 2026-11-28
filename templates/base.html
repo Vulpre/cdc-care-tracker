@@ -324,12 +324,6 @@ input, textarea, select, button{ font-family:inherit; }
       <a href="{% url 'add_flag' %}" class="nav-link {% if '/flag' in request.path %}active{% endif %}"><i class="fa-solid fa-flag"></i> Add a Flag</a>
       <a href="{% url 'report' %}" class="nav-link {% if '/report' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports &amp; Analytics</a>
 
-      {% if request.user.is_staff or request.user.is_superuser %}
-      <div style="margin: 12px 0 6px; padding: 0 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.35);">Admin</div>
-      <a href="/admin/auth/user/" class="nav-link {% if '/admin/auth/user' in request.path %}active{% endif %}"><i class="fa-solid fa-users-gear"></i> Manage Users</a>
-      <a href="/admin/" class="nav-link {% if request.path == '/admin/' %}active{% endif %}"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
-      {% endif %}
-
       <div style="margin: 12px 0 6px; padding: 0 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.35);">Account</div>
       <a href="{% url 'profile' %}" class="nav-link {% if '/profile' in request.path %}active{% endif %}"><i class="fa-solid fa-circle-user"></i> My Profile</a>
       <a href="{% url 'password_reset' %}" class="nav-link {% if '/password-reset' in request.path %}active{% endif %}"><i class="fa-solid fa-key"></i> Change Password</a>

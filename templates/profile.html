@@ -165,14 +165,6 @@
       <a href="{% url 'password_reset' %}" class="btn btn-outline btn-full">
         <i class="fa-solid fa-key"></i> Change / Reset Password
       </a>
-      {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="/admin/auth/user/" class="btn btn-outline btn-full">
-        <i class="fa-solid fa-users-gear"></i> Manage Users
-      </a>
-      <a href="/admin/" class="btn btn-outline btn-full">
-        <i class="fa-solid fa-shield-halved"></i> Open Admin Panel
-      </a>
-      {% endif %}
       <a href="{% url 'logout' %}" class="btn btn-danger btn-full">
         <i class="fa-solid fa-right-from-bracket"></i> Log Out
       </a>
