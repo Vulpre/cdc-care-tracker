@@ -49,6 +49,22 @@ class UserProfile(models.Model):
         return FIELD_OFFICE_DB_MAP.get(self.field_office, 'default')
 
 
+# ── Email verification (OTP) ─────────────────────────────────
+class EmailVerification(models.Model):
+    """
+    One pending sign-up code per user. Only a keyed hash of the code is
+    stored; the row is deleted once the email is verified.
+    See MyNewApp/otp.py for issuing and checking codes.
+    """
+    user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_verification')
+    code_hash  = models.CharField(max_length=128)
+    created_at = models.DateTimeField(default=timezone.now)
+    attempts   = models.PositiveSmallIntegerField(default=0)
+
+    def __str__(self):
+        return f"Email verification for {self.user.username}"
+
+
 # ── Child Model ──────────────────────────────────────────────
 class Child(models.Model):
     first_name    = models.CharField(max_length=100)

@@ -1,0 +1,72 @@
+{% extends "auth_base.html" %}
+
+{% block title %}Verify your email{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Verify your email</h1>
+<p class="page-sub">We sent a 6-digit code to <strong>{{ masked_email }}</strong>. It expires in {{ ttl_minutes }} minutes.</p>
+
+{% for message in messages %}
+<div class="alert alert-success" role="status">
+  <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+  <span>{{ message }}</span>
+</div>
+{% endfor %}
+
+<form method="POST" action="{% url 'verify_email' %}" data-loading-text="Verifying…">
+  {% csrf_token %}
+  <div class="field">
+    <label class="label" for="code">Verification code</label>
+    <input
+      class="input code-input {% if error %}error{% endif %}"
+      type="text" name="code" id="code"
+      inputmode="numeric" autocomplete="one-time-code"
+      pattern="[0-9 ]*" maxlength="7"
+      {% if error %}aria-invalid="true" aria-describedby="code-error"{% endif %}
+      autofocus required>
+    {% if error %}
+      <p class="field-error" id="code-error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>{{ error }}</p>
+    {% endif %}
+  </div>
+  <button type="submit" class="btn">Verify email</button>
+</form>
+
+<div class="switch verify-actions">
+  <form method="POST" action="{% url 'resend_verification' %}">
+    {% csrf_token %}
+    Didn't get it? Check spam, or
+    <button type="submit" class="link-btn" id="resend-btn" data-wait="{{ resend_in }}">send a new code</button>
+  </form>
+  <form method="POST" action="{% url 'cancel_verification' %}">
+    {% csrf_token %}
+    Wrong email address? <button type="submit" class="link-btn">Start over</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.code-input{font-size:1.5rem; letter-spacing:.5em; font-variant-numeric:tabular-nums; text-align:center; padding-left:calc(14px + .5em);}
+.verify-actions{display:grid; gap:8px;}
+.link-btn{font:inherit; font-weight:600; color:var(--primary); background:none; border:0; padding:0; cursor:pointer;
+  text-decoration:underline; text-decoration-color:rgba(28,79,64,.35); text-underline-offset:3px;}
+.link-btn:hover{text-decoration-color:currentColor;}
+.link-btn:disabled{color:var(--ink-soft); font-weight:500; text-decoration:none; cursor:default;}
+</style>
+<script>
+(function () {
+  // Resend cooldown countdown; the server enforces the same limit.
+  var btn = document.getElementById('resend-btn');
+  var left = parseInt(btn.dataset.wait, 10) || 0;
+  var label = btn.textContent;
+  function tick() {
+    if (left <= 0) { btn.disabled = false; btn.textContent = label; return; }
+    btn.disabled = true;
+    btn.textContent = label + ' in ' + left + 's';
+    left -= 1;
+    setTimeout(tick, 1000);
+  }
+  tick();
+})();
+</script>
+{% endblock %}
