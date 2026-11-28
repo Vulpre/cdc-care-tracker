@@ -19,15 +19,21 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 
-def get_monthly_attendance_data(year: int, month: int):
+def get_monthly_attendance_data(year: int, month: int, user=None):
     """
     Computes a full attendance grid and statistics for the given year and month.
+    Scoped to the provided user if provided.
     """
     num_days = calendar.monthrange(year, month)[1]
     month_name = calendar.month_name[month]
 
-    children = Child.objects.all().order_by('last_name', 'first_name')
+    child_qs = Child.objects.all()
+    if user is not None:
+        child_qs = child_qs.filter(user=user)
+    children = child_qs.order_by('last_name', 'first_name')
+
     attendances = Attendance.objects.filter(
+        child__in=children,
         date__year=year,
         date__month=month
     ).select_related('child')

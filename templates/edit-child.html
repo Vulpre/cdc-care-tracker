@@ -53,6 +53,19 @@
         </select>
         {{ form.gender.errors }}
       </div>
+
+      <div class="grid-2col" style="margin-bottom:0; gap:16px;">
+        <div class="field-group">
+          <label class="field-label">Weight (kg) <span style="font-size:11px; color:var(--ink-soft); font-weight:normal;">(ML Assessment)</span></label>
+          <input type="number" step="0.1" min="1" max="100" name="weight_kg" class="input" value="{{ form.weight_kg.value|default:'' }}" placeholder="e.g. 14.5">
+          {{ form.weight_kg.errors }}
+        </div>
+        <div class="field-group">
+          <label class="field-label">Height (cm) <span style="font-size:11px; color:var(--ink-soft); font-weight:normal;">(ML Assessment)</span></label>
+          <input type="number" step="0.1" min="30" max="200" name="height_cm" class="input" value="{{ form.height_cm.value|default:'' }}" placeholder="e.g. 96.0">
+          {{ form.height_cm.errors }}
+        </div>
+      </div>
       
       <div class="field-group">
         <label class="field-label">Barangay</label>

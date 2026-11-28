@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.db.models import Q
 from MyNewApp.models import Child, AboutMe, Attendance, Flag
 from MyNewApp.forms import ChildForm, RegistrationForm
+from MyNewApp.ml.predictor import predict_nutritional_status
 from MyNewApp.reports import (
     get_monthly_attendance_data,
     generate_attendance_excel,
@@ -112,10 +113,10 @@ def select_cdc(request):
 
 @login_required
 def dashboard(request):
-    total_children = Child.objects.count()
-    children = Child.objects.all()[:5]
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
-    recent_flags = Flag.objects.filter(is_resolved=False).select_related('child')[:3]
+    total_children = Child.objects.filter(user=request.user).count()
+    children = Child.objects.filter(user=request.user)[:5]
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    recent_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).select_related('child')[:3]
     return render(request, 'dashboard.html', {
         'total_children': total_children,
         'children': children,
@@ -125,8 +126,8 @@ def dashboard(request):
 
 @login_required
 def attendance(request):
-    children = Child.objects.all().order_by('last_name', 'first_name')
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
+    children = Child.objects.filter(user=request.user).order_by('last_name', 'first_name')
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
     today = timezone.localdate()
 
     # Parse and validate target date from POST or GET
@@ -175,7 +176,7 @@ def attendance(request):
         return redirect('attendance_saved')
 
     # GET: Check existing records for target_date
-    existing_recs = Attendance.objects.filter(date=target_date)
+    existing_recs = Attendance.objects.filter(child__in=children, date=target_date)
     att_map = {rec.child_id: rec.status for rec in existing_recs}
     has_existing = bool(existing_recs.exists())
 
@@ -229,13 +230,47 @@ def attendance_saved(request):
 
 @login_required
 def child_record(request):
-    children = Child.objects.all()
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
+    children = Child.objects.filter(user=request.user).order_by('last_name', 'first_name')
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
     form = ChildForm(request.POST or None)
+
     if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Child record saved successfully.')
+        child = form.save(commit=False)
+        child.user = request.user
+
+        # Machine Learning: Nutritional Status Prediction based on WHO Standards
+        if child.weight_kg and child.height_cm:
+            ml_res = predict_nutritional_status(
+                date_of_birth=child.date_of_birth,
+                gender_str=child.gender,
+                weight_kg=child.weight_kg,
+                height_cm=child.height_cm
+            )
+            child.nutritional_status = ml_res['status']
+            child.save()
+
+            # Automatic Flag creation if child is underweight or at risk
+            if ml_res.get('flag_type'):
+                Flag.objects.create(
+                    child=child,
+                    flag_type=ml_res['flag_type'],
+                    note=f"[ML Assessment] Predicted as {ml_res['status']} (BMI: {ml_res['bmi']}). {ml_res['recommendation']}"
+                )
+                messages.warning(
+                    request,
+                    f"Child saved! ML Assessment: {ml_res['status']} (BMI: {ml_res['bmi']}). Flag created for dietary intervention."
+                )
+            else:
+                messages.success(
+                    request,
+                    f"Child saved! ML Assessment: {ml_res['status']} (BMI: {ml_res['bmi']}). Normal growth detected."
+                )
+        else:
+            child.save()
+            messages.success(request, 'Child record saved successfully.')
+
         return redirect('child_record')
+
     return render(request, 'child-record.html', {
         'children': children,
         'form': form,
@@ -244,12 +279,12 @@ def child_record(request):
 
 @login_required
 def view_child(request, id):
-    child = get_object_or_404(Child, id=id)
+    child = get_object_or_404(Child, id=id, user=request.user)
     attendances = child.attendances.order_by('-date')[:5]
     flags = child.flags.order_by('-created_at')
     active_flags = child.flags.filter(is_resolved=False).order_by('-created_at')
     resolved_flags = child.flags.filter(is_resolved=True).order_by('-created_at')
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
     return render(request, 'record-detail.html', {
         'child': child,
         'attendances': attendances,
@@ -262,17 +297,32 @@ def view_child(request, id):
 
 @login_required
 def edit_child(request, id):
-    child = get_object_or_404(Child, id=id)
+    child = get_object_or_404(Child, id=id, user=request.user)
     form = ChildForm(request.POST or None, instance=child)
     if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Child record updated.')
+        updated_child = form.save(commit=False)
+        if updated_child.weight_kg and updated_child.height_cm:
+            ml_res = predict_nutritional_status(
+                date_of_birth=updated_child.date_of_birth,
+                gender_str=updated_child.gender,
+                weight_kg=updated_child.weight_kg,
+                height_cm=updated_child.height_cm
+            )
+            updated_child.nutritional_status = ml_res['status']
+            if ml_res.get('flag_type') and not updated_child.flags.filter(flag_type=ml_res['flag_type'], is_resolved=False).exists():
+                Flag.objects.create(
+                    child=updated_child,
+                    flag_type=ml_res['flag_type'],
+                    note=f"[ML Assessment] {ml_res['status']} (BMI: {ml_res['bmi']}). {ml_res['recommendation']}"
+                )
+        updated_child.save()
+        messages.success(request, 'Child record updated successfully.')
         return redirect('view_child', id=child.id)
     return render(request, 'edit-child.html', {'child': child, 'form': form})
 
 @login_required
 def delete_child(request, id):
-    child = get_object_or_404(Child, id=id)
+    child = get_object_or_404(Child, id=id, user=request.user)
     if request.method == 'POST':
         child.delete()
         messages.success(request, 'Record deleted.')
@@ -283,21 +333,21 @@ def delete_child(request, id):
 
 @login_required
 def record_detail(request):
-    first_child = Child.objects.first()
+    first_child = Child.objects.filter(user=request.user).first()
     if first_child:
         return redirect('view_child', id=first_child.id)
     return redirect('child_record')
 
 @login_required
 def add_flag(request):
-    children = Child.objects.all()
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
+    children = Child.objects.filter(user=request.user)
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
     if request.method == 'POST':
         child_id  = request.POST.get('child')
         flag_type = request.POST.get('flag_type', 'Absence streak')
         note      = request.POST.get('note', '')
         if child_id:
-            child = get_object_or_404(Child, id=child_id)
+            child = get_object_or_404(Child, id=child_id, user=request.user)
             flag  = Flag.objects.create(child=child, flag_type=flag_type, note=note)
             request.session['last_flag_child'] = f"{child.first_name} {child.last_name}"
             request.session['last_flag_type']  = flag.flag_type
@@ -306,7 +356,7 @@ def add_flag(request):
 
 @login_required
 def resolve_flag(request, id):
-    flag = get_object_or_404(Flag, id=id)
+    flag = get_object_or_404(Flag, id=id, child__user=request.user)
     flag.is_resolved = True
     flag.save()
     messages.success(request, f"Flag '{flag.flag_type}' for {flag.child.first_name} {flag.child.last_name} marked as resolved.")
@@ -314,7 +364,7 @@ def resolve_flag(request, id):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
         child = flag.child
         remaining_child_flags = child.flags.filter(is_resolved=False).count()
-        total_unresolved = Flag.objects.filter(is_resolved=False).count()
+        total_unresolved = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
         return JsonResponse({
             'status': 'success',
             'message': f"Flag '{flag.flag_type}' has been resolved.",
@@ -349,23 +399,25 @@ def desk_profile(request):
 @login_required
 def search(request):
     query = request.GET.get('q', '').strip()
+    user_children = Child.objects.filter(user=request.user)
     if query:
-        children = Child.objects.filter(
+        children = user_children.filter(
             Q(first_name__icontains=query)
             | Q(last_name__icontains=query)
             | Q(barangay__icontains=query)
             | Q(address__icontains=query)
         ).prefetch_related('flags')
     else:
-        children = Child.objects.all().prefetch_related('flags')
+        children = user_children.prefetch_related('flags')
     return render(request, 'search.html', {'children': children, 'query': query})
 
 @login_required
 def report(request):
-    total_children = Child.objects.count()
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
-    total_attendances = Attendance.objects.count()
-    flags = Flag.objects.select_related('child').all()
+    user_children = Child.objects.filter(user=request.user)
+    total_children = user_children.count()
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
+    total_attendances = Attendance.objects.filter(child__user=request.user).count()
+    flags = Flag.objects.filter(child__user=request.user).select_related('child')
 
     # Reporting options
     today = timezone.localdate()
@@ -413,7 +465,7 @@ def export_attendance_excel(request):
         year = now.year
         month = now.month
 
-    data = get_monthly_attendance_data(year, month)
+    data = get_monthly_attendance_data(year, month, user=request.user)
     user_name = request.user.get_full_name() or request.user.username
     buf = generate_attendance_excel(data, center_name="Child Development Center", user_name=user_name)
 
@@ -439,7 +491,7 @@ def export_attendance_pdf(request):
         year = now.year
         month = now.month
 
-    data = get_monthly_attendance_data(year, month)
+    data = get_monthly_attendance_data(year, month, user=request.user)
     user_name = request.user.get_full_name() or request.user.username
     buf = generate_attendance_pdf(data, center_name="Child Development Center", user_name=user_name)
 
@@ -462,9 +514,9 @@ def attendance_monthly_preview(request):
         year = now.year
         month = now.month
 
-    data = get_monthly_attendance_data(year, month)
+    data = get_monthly_attendance_data(year, month, user=request.user)
     user_name = request.user.get_full_name() or request.user.username
-    unresolved_flags = Flag.objects.filter(is_resolved=False).count()
+    unresolved_flags = Flag.objects.filter(child__user=request.user, is_resolved=False).count()
 
     months_list = [{'num': m, 'name': calendar.month_name[m]} for m in range(1, 13)]
     years_list = list(range(now.year - 2, now.year + 1))

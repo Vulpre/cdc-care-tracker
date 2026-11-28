@@ -123,9 +123,14 @@ class RegistrationForm(forms.Form):
 class ChildForm(forms.ModelForm):
     class Meta:
         model = Child
-        fields = '__all__'
+        fields = [
+            'first_name', 'last_name', 'date_of_birth', 'gender',
+            'weight_kg', 'height_cm', 'barangay', 'address'
+        ]
         widgets = {
-            'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+            'date_of_birth': forms.DateInput(attrs={'type': 'date', 'class': 'input'}),
+            'weight_kg': forms.NumberInput(attrs={'class': 'input', 'placeholder': 'e.g. 14.5', 'step': '0.1', 'min': '1'}),
+            'height_cm': forms.NumberInput(attrs={'class': 'input', 'placeholder': 'e.g. 95.0', 'step': '0.1', 'min': '30'}),
         }
 
 

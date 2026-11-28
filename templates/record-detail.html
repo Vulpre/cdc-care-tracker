@@ -328,6 +328,22 @@
           <span class="detail-value"><i class="fa-solid fa-venus-mars" style="color:var(--primary); margin-right:4px;"></i> {{ child.gender }}</span>
         </div>
         <div class="detail-item">
+          <span class="detail-label">Weight & Height</span>
+          <span class="detail-value"><i class="fa-solid fa-weight-scale" style="color:var(--primary); margin-right:4px;"></i> {% if child.weight_kg %}{{ child.weight_kg }} kg{% else %}—{% endif %} &bull; {% if child.height_cm %}{{ child.height_cm }} cm{% else %}—{% endif %}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">ML Nutritional Status</span>
+          <span class="detail-value">
+            {% if child.nutritional_status %}
+              <span class="tag {% if 'Underweight' in child.nutritional_status %}tag-alert{% else %}tag-ok{% endif %}">
+                <i class="fa-solid fa-brain"></i> {{ child.nutritional_status }}
+              </span>
+            {% else %}
+              <span style="color:var(--ink-soft); font-size:13px;">Not assessed</span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="detail-item">
           <span class="detail-label">Barangay</span>
           <span class="detail-value"><i class="fa-solid fa-map-pin" style="color:var(--primary); margin-right:4px;"></i> {{ child.barangay|default:"—" }}</span>
         </div>

@@ -76,8 +76,14 @@
             </div>
             <div style="min-width:0;">
               <div style="font-weight:700; font-size:15px; color:var(--ink);">{{ child.first_name }} {{ child.last_name }}</div>
-              <div style="font-size:12px; color:var(--ink-soft);">
-                {{ child.gender }} &bull; {% if child.barangay %}{{ child.barangay }} &bull; {% endif %}{{ child.address|truncatechars:30 }}
+              <div style="font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                <span>{{ child.gender }}</span> &bull;
+                {% if child.nutritional_status %}
+                  <span style="font-weight:700; color:{% if 'Underweight' in child.nutritional_status %}var(--alert){% elif child.nutritional_status == 'Overweight' %}#d97706{% else %}var(--primary){% endif %};">
+                    <i class="fa-solid fa-heart-pulse"></i> {{ child.nutritional_status }}
+                  </span> &bull;
+                {% endif %}
+                <span>{% if child.barangay %}{{ child.barangay }} &bull; {% endif %}{{ child.address|truncatechars:26 }}</span>
               </div>
             </div>
           </div>
@@ -138,6 +144,19 @@
               <option value="Female" {% if form.gender.value == 'Female' %}selected{% endif %}>Female</option>
             </select>
             {{ form.gender.errors }}
+          </div>
+        </div>
+
+        <div class="grid-2col" style="gap:12px; margin-bottom:0;">
+          <div class="field-group">
+            <label class="field-label">Weight (kg) <span style="font-size:11px; color:var(--ink-soft); font-weight:normal;">(ML Assessment)</span></label>
+            <input type="number" step="0.1" min="1" max="100" name="weight_kg" class="input" value="{{ form.weight_kg.value|default:'' }}" placeholder="e.g. 14.5">
+            {{ form.weight_kg.errors }}
+          </div>
+          <div class="field-group">
+            <label class="field-label">Height (cm) <span style="font-size:11px; color:var(--ink-soft); font-weight:normal;">(ML Assessment)</span></label>
+            <input type="number" step="0.1" min="30" max="200" name="height_cm" class="input" value="{{ form.height_cm.value|default:'' }}" placeholder="e.g. 96.0">
+            {{ form.height_cm.errors }}
           </div>
         </div>
 

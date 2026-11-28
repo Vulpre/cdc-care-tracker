@@ -1,13 +1,18 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 
 # ── Child Model ──────────────────────────────────────────────
 class Child(models.Model):
+    user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='children', null=True, blank=True)
     first_name    = models.CharField(max_length=100)
     last_name     = models.CharField(max_length=100)
     date_of_birth = models.DateField()
     gender        = models.CharField(max_length=10)
+    weight_kg     = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Weight (kg)")
+    height_cm     = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Height (cm)")
+    nutritional_status = models.CharField(max_length=50, blank=True, default='', verbose_name="Nutritional Status")
     barangay      = models.CharField(max_length=100, blank=True, default='')
     address       = models.CharField(max_length=255)
 
