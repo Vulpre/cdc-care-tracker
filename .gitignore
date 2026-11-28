@@ -43,7 +43,23 @@ desktop.ini
 
 # ── Environment Variables ────────────────────────────────────
 .env
-.env.*
+.env.local
+.env.production
+.env.staging
+# allow .env.example (safe template files)
+!.env.example
+
+# ── Database files ───────────────────────────────────────────
+*.sqlite3
+*.db
+
+# ── Secret / sensitive files ─────────────────────────────────
+secrets.json
+local_settings.py
+*.pem
+*.key
+*.p12
+*.pfx
 
 # ── Coverage / Testing ──────────────────────────────────────
 htmlcov/
